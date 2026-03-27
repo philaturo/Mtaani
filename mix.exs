@@ -63,6 +63,10 @@ defmodule MtaaniPrototype.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"}
+      {:postgrex, ">= 0.0.0"},
+      {:geo, "~> 3.5"},
+      {:ecto_sql, "~> 3.0"},
+      {:jason, "~> 1.4"}
     ]
   end
 
