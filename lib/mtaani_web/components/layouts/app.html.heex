@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en" class="[scrollbar-gutter:stable]">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#2E6B46" />
+    <meta name="description" content="Mtaani - AI-powered responsible tourism for Kenya" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    
+    <%= csrf_meta_tag() %>
+    <%= live_title_tag(assigns[:page_title] || "Mtaani", suffix: " · Responsible Tourism") %>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/images/icon-192.png" />
+    
+    <!-- Mapbox GL JS -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.5.0/mapbox-gl.css" rel="stylesheet" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.5.0/mapbox-gl.js"></script>
+    
+    <!-- Font Awesome 6 (solid only) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/solid.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/fontawesome.min.css" />
+    
+    <!-- Tailwind CSS -->
+    <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}></script>
+  </head>
+  <body class="bg-[#FFFCFC] text-[#1E2022] antialiased">
+    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-[#BCABB0]/20">
+      <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+        <a href="/" class="text-2xl font-semibold tracking-tight text-[#2E6B46]">
+          Mtaani
+        </a>
+        <div class="flex items-center gap-4">
+          <button class="p-2 rounded-full hover:bg-[#BCABB0]/10 transition-colors">
+            <i class="fas fa-search text-[#785964]"></i>
+          </button>
+          <button class="p-2 rounded-full hover:bg-[#BCABB0]/10 transition-colors">
+            <i class="fas fa-user-circle text-[#785964]"></i>
+          </button>
+          <button id="theme-toggle" class="p-2 rounded-full hover:bg-[#BCABB0]/10 transition-colors">
+            <i class="fas fa-moon text-[#785964]"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <%= @inner_content %>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('SW registered:', reg))
+          .catch(err => console.log('SW registration failed:', err));
+      }
+    </script>
+  </body>
+</html>
