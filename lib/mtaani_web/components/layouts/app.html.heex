@@ -15,74 +15,39 @@
     </.live_title>
     <link phx-track-static rel="stylesheet" href="/assets/css/app.css" />
     <script defer phx-track-static type="text/javascript" src="/assets/js/app.js"></script>
-    <link rel="manifest" href="/manifest.json" />
+   <!-- <link rel="manifest" href="/manifest.json" /> -->
   </head>
   <body class="bg-onyx text-onyx-deep antialiased h-full">
-    <!-- Header with id and phx-update="ignore" -->
-    <header id="main-header" phx-update="ignore" class="fixed top-0 left-0 right-0 z-50 bg-onyx/80 backdrop-blur-md border-b border-onyx-mauve/20 px-4 py-3">
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-onyx/80 backdrop-blur-md border-b border-onyx-mauve/20 px-4 py-3">
       <div class="max-w-7xl mx-auto flex justify-between items-center">
         <div class="flex items-center gap-2">
           <span class="text-verdant-forest text-xl font-semibold tracking-tight">Mtaani</span>
           <span class="text-xs text-onyx-deep px-2 py-0.5 bg-onyx-mauve/10 rounded-full">beta</span>
         </div>
         <div class="flex items-center gap-3">
-          <!-- Location status - using class instead of ID -->
-          <div class="location-status-indicator text-onyx-deep hover:text-verdant-forest transition-colors" title="Location status">
-            <span class="relative inline-block w-2 h-2 rounded-full bg-verdant-sage animate-pulse mr-1"></span>
-            <span class="text-sm hidden sm:inline">Locating...</span>
-          </div>
-          
-          <!-- Theme toggle - using class instead of ID -->
-          <button class="theme-toggle-btn text-onyx-deep hover:text-verdant-forest transition-colors">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          <!-- Search -->
+          <button class="text-onyx-deep hover:text-verdant-forest transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+          </button>
+          <!-- Notifications -->
+          <button class="text-onyx-deep hover:text-verdant-forest transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
             </svg>
           </button>
         </div>
       </div>
     </header>
 
+    <!-- Main Content -->
     <main class="pt-16 h-full">
       <%= @inner_content %>
     </main>
 
-    <!-- Theme toggle JavaScript - using class selector -->
-    <script>
-      (function() {
-        // Use class selector instead of ID to avoid duplicates
-        const themeToggleBtn = document.querySelector('.theme-toggle-btn');
-        if (themeToggleBtn) {
-          themeToggleBtn.addEventListener('click', () => {
-            const html = document.documentElement;
-            const isDark = html.getAttribute('data-theme') === 'dark';
-            html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-            localStorage.setItem('mtaani-theme', isDark ? 'light' : 'dark');
-          });
-          
-          const savedTheme = localStorage.getItem('mtaani-theme');
-          if (savedTheme) {
-            document.documentElement.setAttribute('data-theme', savedTheme);
-          }
-        }
-        
-        // Optional: Update location status text (can be enhanced later)
-        const locationIndicator = document.querySelector('.location-status-indicator');
-        if (locationIndicator) {
-          const locationText = locationIndicator.querySelector('span:last-child');
-          if (locationText && navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-              () => {
-                locationText.textContent = '📍 Located';
-                const dot = locationIndicator.querySelector('.w-2');
-                if (dot) dot.classList.remove('animate-pulse');
-              },
-              () => {
-                locationText.textContent = '📍 Location off';
-              }
-            );
-          }
-        }
-      })();
-    </script>
+    <!-- Bottom Navigation -->
+    <.bottom_nav active={assigns[:active_tab] || "home"} />
   </body>
 </html>
