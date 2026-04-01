@@ -4,29 +4,36 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#2E6B46" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="description" content="Mtaani - Your personal guide to the streets of Kenya" />
+    
+    <!-- CSRF token for LiveView -->
+    <meta name="csrf-token" content={Plug.CSRFProtection.get_csrf_token()} />
+    
     <.live_title suffix=" · Mtaani">
       <%= assigns[:page_title] || "Mtaani" %>
     </.live_title>
-    <link phx-track-static rel="stylesheet" href="/assets/app.css" />
-    <script defer phx-track-static type="text/javascript" src="/assets/app.js"></script>
+    <link phx-track-static rel="stylesheet" href="/assets/css/app.css" />
+    <script defer phx-track-static type="text/javascript" src="/assets/js/app.js"></script>
     <link rel="manifest" href="/manifest.json" />
   </head>
   <body class="bg-onyx text-onyx-deep antialiased h-full">
-    <header class="fixed top-0 left-0 right-0 z-50 bg-onyx/80 backdrop-blur-md border-b border-onyx-mauve/20 px-4 py-3">
+    <!-- Header with id and phx-update="ignore" -->
+    <header id="main-header" phx-update="ignore" class="fixed top-0 left-0 right-0 z-50 bg-onyx/80 backdrop-blur-md border-b border-onyx-mauve/20 px-4 py-3">
       <div class="max-w-7xl mx-auto flex justify-between items-center">
         <div class="flex items-center gap-2">
           <span class="text-verdant-forest text-xl font-semibold tracking-tight">Mtaani</span>
           <span class="text-xs text-onyx-deep px-2 py-0.5 bg-onyx-mauve/10 rounded-full">beta</span>
         </div>
         <div class="flex items-center gap-3">
-          <button id="location-status" class="text-onyx-deep hover:text-verdant-forest transition-colors" title="Location status">
+          <!-- Location status - using class instead of ID -->
+          <div class="location-status-indicator text-onyx-deep hover:text-verdant-forest transition-colors" title="Location status">
             <span class="relative inline-block w-2 h-2 rounded-full bg-verdant-sage animate-pulse mr-1"></span>
             <span class="text-sm hidden sm:inline">Locating...</span>
-          </button>
-          <button id="theme-toggle" class="text-onyx-deep hover:text-verdant-forest transition-colors">
+          </div>
+          
+          <!-- Theme toggle - using class instead of ID -->
+          <button class="theme-toggle-btn text-onyx-deep hover:text-verdant-forest transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
@@ -39,21 +46,43 @@
       <%= @inner_content %>
     </main>
 
+    <!-- Theme toggle JavaScript - using class selector -->
     <script>
-      const themeToggle = document.getElementById('theme-toggle');
-      if (themeToggle) {
-        themeToggle.addEventListener('click', () => {
-          const html = document.documentElement;
-          const isDark = html.getAttribute('data-theme') === 'dark';
-          html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-          localStorage.setItem('mtaani-theme', isDark ? 'light' : 'dark');
-        });
-        
-        const savedTheme = localStorage.getItem('mtaani-theme');
-        if (savedTheme) {
-          document.documentElement.setAttribute('data-theme', savedTheme);
+      (function() {
+        // Use class selector instead of ID to avoid duplicates
+        const themeToggleBtn = document.querySelector('.theme-toggle-btn');
+        if (themeToggleBtn) {
+          themeToggleBtn.addEventListener('click', () => {
+            const html = document.documentElement;
+            const isDark = html.getAttribute('data-theme') === 'dark';
+            html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            localStorage.setItem('mtaani-theme', isDark ? 'light' : 'dark');
+          });
+          
+          const savedTheme = localStorage.getItem('mtaani-theme');
+          if (savedTheme) {
+            document.documentElement.setAttribute('data-theme', savedTheme);
+          }
         }
-      }
+        
+        // Optional: Update location status text (can be enhanced later)
+        const locationIndicator = document.querySelector('.location-status-indicator');
+        if (locationIndicator) {
+          const locationText = locationIndicator.querySelector('span:last-child');
+          if (locationText && navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              () => {
+                locationText.textContent = '📍 Located';
+                const dot = locationIndicator.querySelector('.w-2');
+                if (dot) dot.classList.remove('animate-pulse');
+              },
+              () => {
+                locationText.textContent = '📍 Location off';
+              }
+            );
+          }
+        }
+      })();
     </script>
   </body>
 </html>
