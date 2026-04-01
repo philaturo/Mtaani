@@ -1,5 +1,17 @@
 import Config
 
+# Configure your database
+config :mtaani, Mtaani.Repo,
+  username: "postgres",
+  password: "postgres",  # PostgreSQL password
+  database: "mtaani_dev",
+  hostname: "localhost",
+  port: 5432,
+  stacktrace: true,
+  show_sensitive_data: true,
+  pool_size: 10
+
+
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #

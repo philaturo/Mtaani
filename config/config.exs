@@ -8,6 +8,7 @@
 import Config
 
 config :mtaani,
+  ecto_repos: [Mtaani.Repo],
   generators: [timestamp_type: :utc_datetime]
 
 # Configure the endpoint
