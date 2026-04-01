@@ -2,21 +2,21 @@ defmodule MtaaniWeb.HomeLive do
   use MtaaniWeb, :live_view
 
   @impl true
-  def mount(_params, _session, socket) do
-    socket =
-      socket
-      |> assign(:messages, [])
-      |> assign(:input_text, "")
-      |> assign(:thinking, false)
-      |> assign(:user_location, nil)
-      |> assign(:current_vibe, :unknown)
+def mount(_params, _session, socket) do
+  socket =
+    socket
+    |> assign(:messages, [])
+    |> assign(:input_text, "")
+    |> assign(:thinking, false)
+    |> assign(:user_location, nil)
+    |> assign(:current_vibe, :unknown)
 
-    if connected?(socket) do
-      send(self(), :request_location)
-    end
-
-    {:ok, socket}
+  if connected?(socket) do
+    send(self(), :request_location)
   end
+
+  {:ok, socket}
+end
 
   @impl true
   def handle_info(:request_location, socket) do
