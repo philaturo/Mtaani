@@ -1,15 +1,13 @@
-defmodule MtaaniWeb.PlanLive do
+defmodule MtaaniWeb.GroupsLive do
   use MtaaniWeb, :live_view
 
   @impl true
   def mount(_params, _session, socket) do
     socket =
       socket
-      |> assign(:active_tab, "plan")
-      |> assign(:trips, [])
-      |> assign(:current_trip, nil)
-      |> assign(:destinations, [])
-      |> assign(:show_form, false)
+      |> assign(:active_tab, "groups")
+      |> assign(:groups, [])
+      |> assign(:selected_group, nil)
 
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Mtaani.PubSub, "online_count")
@@ -29,38 +27,32 @@ defmodule MtaaniWeb.PlanLive do
   end
 
   @impl true
-  def handle_event("new_trip", _, socket) do
-    {:noreply, assign(socket, :show_form, true)}
-  end
-
-  @impl true
   def render(assigns) do
     ~H"""
     <div class="pb-20">
       <div class="bg-white border-b border-onyx-mauve/20 px-4 py-4">
-        <h1 class="text-xl font-semibold text-onyx-deep">Trip Planner</h1>
-        <p class="text-sm text-onyx-mauve">Plan your journey with AI-powered recommendations</p>
+        <h1 class="text-xl font-semibold text-onyx-deep">Groups</h1>
+        <p class="text-sm text-onyx-mauve">Connect with travelers and locals</p>
       </div>
 
       <div class="p-4 space-y-4">
         <button
-          phx-click="new_trip"
           class="w-full bg-verdant-forest text-white py-3 rounded-xl hover:bg-verdant-deep transition-colors flex items-center justify-center gap-2"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
-          Create new trip
+          Create New Group
         </button>
 
-        <div :if={@trips == []} class="text-center py-12">
+        <div :if={@groups == []} class="text-center py-12">
           <div class="w-16 h-16 rounded-full bg-onyx-mauve/10 flex items-center justify-center mx-auto mb-4">
             <svg class="w-8 h-8 text-onyx-deep" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </div>
-          <p class="text-onyx-deep">No trips planned yet</p>
-          <p class="text-sm text-onyx-mauve mt-1">Start planning your next adventure</p>
+          <p class="text-onyx-deep">No groups yet</p>
+          <p class="text-sm text-onyx-mauve mt-1">Create a group to plan trips with friends</p>
         </div>
       </div>
     </div>

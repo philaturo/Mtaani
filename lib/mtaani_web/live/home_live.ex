@@ -2,25 +2,34 @@ defmodule MtaaniWeb.HomeLive do
   use MtaaniWeb, :live_view
 
   @impl true
-  def mount(_params, _session, socket) do
-    # Get user from session (placeholder for now)
-    user = %{name: "Explorer"}
-    
-    socket =
-      socket
-      |> assign(:active_tab, "home")
-      |> assign(:user, user)
-      |> assign(:messages, [])
-      |> assign(:input_text, "")
-      |> assign(:thinking, false)
-      |> assign(:user_location, nil)
-      |> assign(:current_vibe, :unknown)
+def mount(_params, _session, socket) do
+  # Get user from session (placeholder for now)
+  user = %{name: "Explorer"}
+  
+  socket =
+    socket
+    |> assign(:active_tab, "home")
+    |> assign(:user, user)
+    |> assign(:messages, [])
+    |> assign(:input_text, "")
+    |> assign(:thinking, false)
+    |> assign(:user_location, nil)
+    |> assign(:current_vibe, :unknown)
 
-    if connected?(socket) do
-      send(self(), :request_location)
-    end
+  if connected?(socket) do
+    # Subscribe to online count updates
+    Phoenix.PubSub.subscribe(Mtaani.PubSub, "online_count")
+    # Request location
+    send(self(), :request_location)
+  end
 
-    {:ok, socket}
+  {:ok, socket}
+end
+
+    # Add this handler to receive online count updates
+  @impl true
+  def handle_info({:online_count, count}, socket) do
+    {:noreply, push_event(socket, "online_count_update", %{count: count})}
   end
 
   @impl true

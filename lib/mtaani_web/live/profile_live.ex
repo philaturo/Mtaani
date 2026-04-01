@@ -3,20 +3,31 @@ defmodule MtaaniWeb.ProfileLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok,
-     socket
-     |> assign(:active_tab, "profile")
-     |> assign(:user, %{
-       name: "John Mwangi",
-       email: "john@example.com",
-       phone: "0712345678",
-       member_since: "April 2026"
-     })
-     |> assign(:impact, %{
-       local_businesses: 12,
-       community_revenue: 3450,
-       carbon_saved: 8.5
-     })}
+    socket =
+      socket
+      |> assign(:active_tab, "profile")
+      |> assign(:user, %{
+        name: "John Mwangi",
+        email: "john@example.com",
+        phone: "0712345678",
+        member_since: "April 2026"
+      })
+      |> assign(:impact, %{
+        local_businesses: 12,
+        community_revenue: 3450,
+        carbon_saved: 8.5
+      })
+
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Mtaani.PubSub, "online_count")
+    end
+
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_info({:online_count, count}, socket) do
+    {:noreply, push_event(socket, "online_count_update", %{count: count})}
   end
 
   @impl true

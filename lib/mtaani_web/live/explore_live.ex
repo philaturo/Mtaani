@@ -3,11 +3,22 @@ defmodule MtaaniWeb.ExploreLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok,
-     socket
-     |> assign(:active_tab, "explore")
-     |> assign(:nearby_places, [])
-     |> assign(:selected_place, nil)}
+    socket =
+      socket
+      |> assign(:active_tab, "explore")
+      |> assign(:nearby_places, [])
+      |> assign(:selected_place, nil)
+
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Mtaani.PubSub, "online_count")
+    end
+
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_info({:online_count, count}, socket) do
+    {:noreply, push_event(socket, "online_count_update", %{count: count})}
   end
 
   @impl true
