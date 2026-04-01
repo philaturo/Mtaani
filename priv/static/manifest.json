@@ -1,11 +1,11 @@
 {
   "name": "Mtaani",
   "short_name": "Mtaani",
-  "description": "AI-powered responsible tourism platform for Kenya",
+  "description": "Your personal guide to the streets of Kenya",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FFFCFC",
   "theme_color": "#2E6B46",
+  "background_color": "#FFFCFC",
   "icons": [
     {
       "src": "/images/icon-192.png",
@@ -16,7 +16,8 @@
     {
       "src": "/images/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
