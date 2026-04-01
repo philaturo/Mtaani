@@ -6,7 +6,7 @@ import Config
 # The watchers configuration can be used to run external
 # watchers to your application. For example, we can use it
 # to bundle .js and .css sources.
-config :mtaani_prototype, MtaaniPrototypeWeb.Endpoint,
+config :mtaani, MtaaniWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
   http: [ip: {127, 0, 0, 1}],
@@ -15,8 +15,8 @@ config :mtaani_prototype, MtaaniPrototypeWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "k9A2ibqK3Lu4pfaMw6WQuC7mhjxo+KWx6HXXN2R27AlwvfDcskPR68aElbYzq62Y",
   watchers: [
-    esbuild: {Esbuild, :install_and_run, [:mtaani_prototype, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:mtaani_prototype, ~w(--watch)]}
+    esbuild: {Esbuild, :install_and_run, [:mtaani, ~w(--sourcemap=inline --watch)]},
+    tailwind: {Tailwind, :install_and_run, [:mtaani, ~w(--watch)]}
   ]
 
 # ## SSL Support
@@ -43,7 +43,7 @@ config :mtaani_prototype, MtaaniPrototypeWeb.Endpoint,
 # different ports.
 
 # Reload browser tabs when matching files change.
-config :mtaani_prototype, MtaaniPrototypeWeb.Endpoint,
+config :mtaani, MtaaniWeb.Endpoint,
   live_reload: [
     web_console_logger: true,
     patterns: [
@@ -52,13 +52,13 @@ config :mtaani_prototype, MtaaniPrototypeWeb.Endpoint,
       # Gettext translations
       ~r"priv/gettext/.*\.po$"E,
       # Router, Controllers, LiveViews and LiveComponents
-      ~r"lib/mtaani_prototype_web/router\.ex$"E,
-      ~r"lib/mtaani_prototype_web/(controllers|live|components)/.*\.(ex|heex)$"E
+      ~r"lib/mtaani_web/router\.ex$"E,
+      ~r"lib/mtaani_web/(controllers|live|components)/.*\.(ex|heex)$"E
     ]
   ]
 
 # Enable dev routes for dashboard and mailbox
-config :mtaani_prototype, dev_routes: true
+config :mtaani, dev_routes: true
 
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"
@@ -79,4 +79,4 @@ config :phoenix_live_view,
   enable_expensive_runtime_checks: true
 
 # Disable swoosh api client as it is only required for production adapters.
-config :swoosh, :api_client, false
+# config :swoosh, :api_client, false

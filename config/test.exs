@@ -2,16 +2,16 @@ import Config
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
-config :mtaani_prototype, MtaaniPrototypeWeb.Endpoint,
+config :mtaani, MtaaniWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
   secret_key_base: "xn+dzjqZ5a35qBlGTBi5fUe+xqwxpm2VrkyXejRhhv5rYwKZ1ReGBCKiV9h9UwQg",
   server: false
 
 # In test we don't send emails
-config :mtaani_prototype, MtaaniPrototype.Mailer, adapter: Swoosh.Adapters.Test
+# config :mtaani, Mtaani.Mailer, adapter: Swoosh.Adapters.Test
 
 # Disable swoosh api client as it is only required for production adapters
-config :swoosh, :api_client, false
+# config :swoosh, :api_client, false
 
 # Print only warnings and errors during test
 config :logger, level: :warning

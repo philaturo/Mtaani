@@ -17,10 +17,10 @@ import Config
 # Alternatively, you can use `mix phx.gen.release` to generate a `bin/server`
 # script that automatically sets the env var above.
 if System.get_env("PHX_SERVER") do
-  config :mtaani_prototype, MtaaniPrototypeWeb.Endpoint, server: true
+  config :mtaani, MtaaniWeb.Endpoint, server: true
 end
 
-config :mtaani_prototype, MtaaniPrototypeWeb.Endpoint,
+config :mtaani, MtaaniWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
 if config_env() == :prod do
@@ -38,9 +38,9 @@ if config_env() == :prod do
 
   host = System.get_env("PHX_HOST") || "example.com"
 
-  config :mtaani_prototype, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
+  config :mtaani, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
-  config :mtaani_prototype, MtaaniPrototypeWeb.Endpoint,
+  config :mtaani, MtaaniWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     http: [
       # Enable IPv6 and bind on all interfaces.
@@ -56,7 +56,7 @@ if config_env() == :prod do
   # To get SSL working, you will need to add the `https` key
   # to your endpoint configuration:
   #
-  #     config :mtaani_prototype, MtaaniPrototypeWeb.Endpoint,
+  #     config :mtaani, MtaaniWeb.Endpoint,
   #       https: [
   #         ...,
   #         port: 443,

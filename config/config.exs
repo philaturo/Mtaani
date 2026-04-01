@@ -7,18 +7,17 @@
 # General application configuration
 import Config
 
-config :mtaani_prototype,
+config :mtaani,
   generators: [timestamp_type: :utc_datetime]
 
 # Configure the endpoint
-config :mtaani_prototype, MtaaniPrototypeWeb.Endpoint,
+config :mtaani, MtaaniWeb.Endpoint,
   url: [host: "localhost"],
-  adapter: Bandit.PhoenixAdapter,
   render_errors: [
-    formats: [html: MtaaniPrototypeWeb.ErrorHTML, json: MtaaniPrototypeWeb.ErrorJSON],
+    formats: [html: MtaaniWeb.ErrorHTML, json: MtaaniWeb.ErrorJSON],
     layout: false
   ],
-  pubsub_server: MtaaniPrototype.PubSub,
+  pubsub_server: Mtaani.PubSub,
   live_view: [signing_salt: "eZHIg6gA"]
 
 # Configure the mailer
@@ -28,12 +27,12 @@ config :mtaani_prototype, MtaaniPrototypeWeb.Endpoint,
 #
 # For production it's recommended to configure a different adapter
 # at the `config/runtime.exs`.
-config :mtaani_prototype, MtaaniPrototype.Mailer, adapter: Swoosh.Adapters.Local
+# config :mtaani, Mtaani.Mailer, adapter: Swoosh.Adapters.Local
 
 # Configure esbuild (the version is required)
 config :esbuild,
   version: "0.25.4",
-  mtaani_prototype: [
+  mtaani: [
     args:
       ~w(js/app.js --bundle --target=es2022 --outdir=../priv/static/assets/js --external:/fonts/* --external:/images/* --alias:@=.),
     cd: Path.expand("../assets", __DIR__),
@@ -43,7 +42,7 @@ config :esbuild,
 # Configure tailwind (the version is required)
 config :tailwind,
   version: "4.1.12",
-  mtaani_prototype: [
+  mtaani: [
     args: ~w(
       --input=assets/css/app.css
       --output=priv/static/assets/css/app.css
