@@ -3,7 +3,6 @@ defmodule MtaaniWeb.HomeLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    # Initialize with empty conversation and default location
     socket =
       socket
       |> assign(:messages, [])
@@ -11,10 +10,7 @@ defmodule MtaaniWeb.HomeLive do
       |> assign(:thinking, false)
       |> assign(:user_location, nil)
       |> assign(:current_vibe, :unknown)
-      |> assign(:show_map_modal, false)
-      |> assign(:map_data, nil)
 
-    # Request location from client via hook
     if connected?(socket) do
       send(self(), :request_location)
     end
@@ -28,30 +24,6 @@ defmodule MtaaniWeb.HomeLive do
   end
 
   @impl true
-  def handle_event("location-update", %{"lat" => lat, "lng" => lng}, socket) do
-    location = %{lat: lat, lng: lng}
-    # In production, reverse geocode to get area name and check safety zone
-    {:noreply,
-     socket
-     |> assign(:user_location, location)
-     |> assign(:current_vibe, :calm)  # Placeholder - will be determined by PostGIS
-     |> push_event("map-update", %{lat: lat, lng: lng, zoom: 14})}
-  end
-
-  @impl true
-  def handle_event("send-message", %{"message" => message}, socket) do
-    # Add user message to chat
-    messages = socket.assigns.messages ++ [%{role: :user, content: message, timestamp: DateTime.utc_now()}]
-    socket = assign(socket, :messages, messages, thinking: true)
-
-    # Send to AI service (we'll implement this later)
-    # For now, simulate a response
-    send(self(), {:ai_response, message})
-
-    {:noreply, socket}
-  end
-
-  @impl true
   def handle_info({:ai_response, user_message}, socket) do
     # Placeholder AI response - will be replaced with real LLM call
     response = """
@@ -62,7 +34,48 @@ defmodule MtaaniWeb.HomeLive do
 
     messages = socket.assigns.messages ++ [%{role: :assistant, content: response, timestamp: DateTime.utc_now()}]
 
-    {:noreply, assign(socket, :messages, messages, thinking: false)}
+   {:noreply, assign(socket, [messages: messages, thinking: false])}
+  end
+
+  @impl true
+  def handle_event("location-update", %{"lat" => lat, "lng" => lng}, socket) do
+    location = %{lat: lat, lng: lng}
+    {:noreply,
+     socket
+     |> assign(:user_location, location)
+     |> assign(:current_vibe, :calm)}
+  end
+
+  @impl true
+  def handle_event("location-error", %{"error" => error}, socket) do
+    IO.puts("Geolocation error: #{error}")
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("location-moved", %{"lat" => lat, "lng" => lng}, socket) do
+    {:noreply, assign(socket, :user_location, %{lat: lat, lng: lng})}
+  end
+
+  @impl true
+  def handle_event("update-input", %{"message" => message}, socket) do
+    {:noreply, assign(socket, :input_text, message)}
+  end
+
+  @impl true
+  def handle_event("send-message", %{"message" => message}, socket) when message != "" do
+    messages = socket.assigns.messages ++ [%{role: :user, content: message, timestamp: DateTime.utc_now()}]
+   socket = assign(socket, [messages: messages, thinking: true, input_text: ""])
+
+    # Send to AI service (placeholder)
+    send(self(), {:ai_response, message})
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("send-message", _, socket) do
+    {:noreply, socket}
   end
 
   @impl true
@@ -80,21 +93,27 @@ defmodule MtaaniWeb.HomeLive do
           from finding local food to checking safety conditions.
         </p>
         
-        <!-- Quick suggestions -->
         <div class="flex flex-wrap justify-center gap-2 pt-4">
-          <.suggestion_chip label="🍽️ Local food near me" query="Find me local food within walking distance" />
-          <.suggestion_chip label="🛡️ Is it calm here?" query="Is the area around me calm right now?" />
-          <.suggestion_chip label="🚗 How to get to the airport" query="Best way to get to Jomo Kenyatta Airport?" />
-          <.suggestion_chip label="🎉 What's happening?" query="Any events or vibes happening today?" />
-          <.suggestion_chip label="🏨 Budget places to stay" query="Find me budget-friendly places to stay in CBD" />
+          <button phx-click="send-message" phx-value-message="Find me local food within walking distance" class="px-4 py-2 bg-onyx-mauve/10 hover:bg-onyx-mauve/20 rounded-full text-sm text-onyx-deep transition-colors">
+            🍽️ Local food near me
+          </button>
+          <button phx-click="send-message" phx-value-message="Is the area around me calm right now?" class="px-4 py-2 bg-onyx-mauve/10 hover:bg-onyx-mauve/20 rounded-full text-sm text-onyx-deep transition-colors">
+            🛡️ Is it calm here?
+          </button>
+          <button phx-click="send-message" phx-value-message="Best way to get to Jomo Kenyatta Airport?" class="px-4 py-2 bg-onyx-mauve/10 hover:bg-onyx-mauve/20 rounded-full text-sm text-onyx-deep transition-colors">
+            🚗 How to get to the airport
+          </button>
+          <button phx-click="send-message" phx-value-message="Any events or vibes happening today?" class="px-4 py-2 bg-onyx-mauve/10 hover:bg-onyx-mauve/20 rounded-full text-sm text-onyx-deep transition-colors">
+            🎉 What's happening?
+          </button>
         </div>
       </div>
 
       <!-- Chat Messages -->
-      <div :if={@messages != []} class="flex-1 overflow-y-auto space-y-4 pb-4">
+      <div :if={@messages != []} class="flex-1 overflow-y-auto space-y-4 pb-4 custom-scrollbar">
         <%= for message <- @messages do %>
           <div class={[
-            "flex",
+            "flex message-fade-in",
             message.role == :user && "justify-end",
             message.role == :assistant && "justify-start"
           ]}>
@@ -115,8 +134,8 @@ defmodule MtaaniWeb.HomeLive do
           <div class="bg-onyx-mauve/10 rounded-2xl px-4 py-3">
             <div class="flex space-x-1">
               <div class="w-2 h-2 bg-verdant-forest rounded-full animate-bounce"></div>
-              <div class="w-2 h-2 bg-verdant-forest rounded-full animate-bounce [animation-delay:0.2s]"></div>
-              <div class="w-2 h-2 bg-verdant-forest rounded-full animate-bounce [animation-delay:0.4s]"></div>
+              <div class="w-2 h-2 bg-verdant-forest rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+              <div class="w-2 h-2 bg-verdant-forest rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
             </div>
           </div>
         </div>
@@ -144,7 +163,6 @@ defmodule MtaaniWeb.HomeLive do
           </button>
         </form>
         
-        <!-- Location status bar -->
         <div class="flex justify-between items-center mt-3 text-xs text-onyx-mauve">
           <div class="flex items-center gap-2">
             <span :if={@user_location} class="flex items-center gap-1">
@@ -156,42 +174,15 @@ defmodule MtaaniWeb.HomeLive do
               <span>📍 Getting your location...</span>
             </span>
           </div>
-          <div :if={@current_vibe != :unknown}>
-            <.vibe_badge vibe={@current_vibe} />
-          </div>
+          <span :if={@current_vibe == :calm} class="px-2 py-0.5 rounded-full text-xs font-medium bg-verdant-sage/20 text-verdant-sage">
+            🟢 Calm area
+          </span>
+          <span :if={@current_vibe == :bustling} class="px-2 py-0.5 rounded-full text-xs font-medium bg-verdant-clay/20 text-verdant-clay">
+            🟡 Bustling
+          </span>
         </div>
       </div>
     </div>
-    """
-  end
-
-  defp suggestion_chip(assigns) do
-    ~H"""
-    <button
-      phx-click="send-message"
-      phx-value-message={@query}
-      class="px-4 py-2 bg-onyx-mauve/10 hover:bg-onyx-mauve/20 rounded-full text-sm text-onyx-deep transition-colors"
-    >
-      <%= @label %>
-    </button>
-    """
-  end
-
-  defp vibe_badge(assigns) do
-    ~H"""
-    <span class={[
-      "px-2 py-0.5 rounded-full text-xs font-medium",
-      @vibe == :calm && "bg-verdant-sage/20 text-verdant-sage",
-      @vibe == :bustling && "bg-verdant-clay/20 text-verdant-clay",
-      @vibe == :caution && "bg-verdant-clay/30 text-verdant-clay"
-    ]}>
-      <%= case @vibe do %>
-        <% :calm -> %>🟢 Calm area
-        <% :bustling -> %>🟡 Bustling
-        <% :caution -> %>🟠 Caution advised
-        <% _ -> %>❔ Unknown
-      <% end %>
-    </span>
     """
   end
 end
