@@ -1,60 +1,68 @@
 <!DOCTYPE html>
-<html lang="en" class="[scrollbar-gutter:stable]">
+<html lang="en" class="h-full">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#2E6B46" />
-    <meta name="description" content="Mtaani - AI-powered responsible tourism for Kenya" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    
-    <%= csrf_meta_tag() %>
-    <%= live_title_tag(assigns[:page_title] || "Mtaani", suffix: " · Responsible Tourism") %>
-    
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" href="/images/icon-192.png" />
-    
-    <!-- Mapbox GL JS -->
-    <link href="https://api.mapbox.com/mapbox-gl-js/v3.5.0/mapbox-gl.css" rel="stylesheet" />
-    <script src="https://api.mapbox.com/mapbox-gl-js/v3.5.0/mapbox-gl.js"></script>
-    
-    <!-- Font Awesome 6 (solid only) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/solid.min.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/fontawesome.min.css" />
-    
-    <!-- Tailwind CSS -->
+    <meta name="description" content="Mtaani - Your personal guide to the streets of Kenya" />
+    <.live_title suffix=" · Mtaani">
+      <%= assigns[:page_title] || "Mtaani" %>
+    </.live_title>
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
-    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}></script>
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
+    </script>
+    <link rel="manifest" href="/manifest.json" />
   </head>
-  <body class="bg-[#FFFCFC] text-[#1E2022] antialiased">
-    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-[#BCABB0]/20">
-      <div class="container mx-auto px-4 py-3 flex items-center justify-between">
-        <a href="/" class="text-2xl font-semibold tracking-tight text-[#2E6B46]">
-          Mtaani
-        </a>
-        <div class="flex items-center gap-4">
-          <button class="p-2 rounded-full hover:bg-[#BCABB0]/10 transition-colors">
-            <i class="fas fa-search text-[#785964]"></i>
+  <body class="bg-onyx text-onyx-deep antialiased h-full">
+    <header class="fixed top-0 left-0 right-0 z-50 bg-onyx/80 backdrop-blur-md border-b border-onyx-mauve/20 px-4 py-3">
+      <div class="max-w-7xl mx-auto flex justify-between items-center">
+        <div class="flex items-center gap-2">
+          <span class="text-verdant-forest text-xl font-semibold tracking-tight">Mtaani</span>
+          <span class="text-xs text-onyx-deep px-2 py-0.5 bg-onyx-mauve/10 rounded-full">beta</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <button id="location-status" class="text-onyx-deep hover:text-verdant-forest transition-colors" title="Location status">
+            <span class="relative inline-block w-2 h-2 rounded-full bg-verdant-sage animate-pulse mr-1"></span>
+            <span class="text-sm hidden sm:inline">Locating...</span>
           </button>
-          <button class="p-2 rounded-full hover:bg-[#BCABB0]/10 transition-colors">
-            <i class="fas fa-user-circle text-[#785964]"></i>
-          </button>
-          <button id="theme-toggle" class="p-2 rounded-full hover:bg-[#BCABB0]/10 transition-colors">
-            <i class="fas fa-moon text-[#785964]"></i>
+          <button id="theme-toggle" class="text-onyx-deep hover:text-verdant-forest transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
           </button>
         </div>
       </div>
     </header>
 
-    <%= @inner_content %>
-    
-    <!-- Service Worker Registration -->
+    <main class="pt-16 h-full">
+      <%= @inner_content %>
+    </main>
+
+    <%= if assigns[:show_modal] do %>
+      <div id="global-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-onyx-deep/50 backdrop-blur-sm">
+        <div class="bg-onyx rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-auto">
+          <%= @modal_content %>
+        </div>
+      </div>
+    <% end %>
+
     <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js')
-          .then(reg => console.log('SW registered:', reg))
-          .catch(err => console.log('SW registration failed:', err));
+      // Simple theme toggle (persist to localStorage)
+      const themeToggle = document.getElementById('theme-toggle');
+      if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+          const html = document.documentElement;
+          const isDark = html.getAttribute('data-theme') === 'dark';
+          html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+          localStorage.setItem('mtaani-theme', isDark ? 'light' : 'dark');
+        });
+        
+        const savedTheme = localStorage.getItem('mtaani-theme');
+        if (savedTheme) {
+          document.documentElement.setAttribute('data-theme', savedTheme);
+        }
       }
     </script>
   </body>
