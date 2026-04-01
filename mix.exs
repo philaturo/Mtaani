@@ -40,7 +40,9 @@ defmodule Mtaani.MixProject do
       {:plug_cowboy, "~> 2.6"},
       {:postgrex, "~> 0.17"},
       {:geo, "~> 3.5"},
-      {:ecto_sql, "~> 3.0"}
+      {:ecto_sql, "~> 3.0"},
+      {:httpoison, "~> 2.0"},
+      
     ]
   end
 
