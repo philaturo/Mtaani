@@ -1,6 +1,7 @@
 import { Socket } from "phoenix";
 import { LiveSocket } from "phoenix_live_view";
 import topbar from "../vendor/topbar";
+import { OnlineTracker } from "./hooks/online_tracker";
 
 // Get CSRF token from meta tag
 let csrfToken = document
@@ -11,6 +12,8 @@ let csrfToken = document
 let liveSocket = new LiveSocket("/live", Socket, {
   params: { _csrf_token: csrfToken },
   hooks: {
+    //MapLibre: MapLibreHook,
+    OnlineTracker: OnlineTracker,
     Geolocation: {
       mounted() {
         if ("geolocation" in navigator) {
