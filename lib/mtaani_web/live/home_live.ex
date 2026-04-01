@@ -1,62 +1,197 @@
 defmodule MtaaniWeb.HomeLive do
-    use MtaaniWeb, :live_view
+  use MtaaniWeb, :live_view
 
-    @impl true
-    def mount(_params, _session, socket) do
-    # Get user location from session or default to Nairobi
-    user_location = get_session(socket, :user_location) || %{lat: -1.2921, lng: 36.8219}
+  @impl true
+  def mount(_params, _session, socket) do
+    # Initialize with empty conversation and default location
+    socket =
+      socket
+      |> assign(:messages, [])
+      |> assign(:input_text, "")
+      |> assign(:thinking, false)
+      |> assign(:user_location, nil)
+      |> assign(:current_vibe, :unknown)
+      |> assign(:show_map_modal, false)
+      |> assign(:map_data, nil)
 
-    socket = assign(socket,
-    page_title: "Discover Kenya",
-    user_location: user_location,
-    map_center: user_location,
-    map_zoom: 13,
-    safety_heatmap_data: [],
-    nearby_locations: [],
-    ai_drawer_open: false,
-    chat_messages: [
-        %{role: "assistant", content: " Hi! I'm your Mtaani guide. Where would you like to explore today?"}
-      ],
-      chat_loading: false
-    )
-    
+    # Request location from client via hook
+    if connected?(socket) do
+      send(self(), :request_location)
+    end
+
     {:ok, socket}
   end
 
   @impl true
-  def handle_event("send_chat_message", %{"message" => message}, socket) when message != "" do
-    # Add user message
-    messages = socket.assigns.chat_messages ++ [%{role: "user", content: message}]
-    socket = assign(socket, chat_messages: messages, chat_loading: true)
-    
-    # Simulate AI response (will connect to real AI later)
-    send(self(), :simulate_ai_response)
-    
+  def handle_info(:request_location, socket) do
+    {:noreply, push_event(socket, "request-geolocation", %{})}
+  end
+
+  @impl true
+  def handle_event("location-update", %{"lat" => lat, "lng" => lng}, socket) do
+    location = %{lat: lat, lng: lng}
+    # In production, reverse geocode to get area name and check safety zone
+    {:noreply,
+     socket
+     |> assign(:user_location, location)
+     |> assign(:current_vibe, :calm)  # Placeholder - will be determined by PostGIS
+     |> push_event("map-update", %{lat: lat, lng: lng, zoom: 14})}
+  end
+
+  @impl true
+  def handle_event("send-message", %{"message" => message}, socket) do
+    # Add user message to chat
+    messages = socket.assigns.messages ++ [%{role: :user, content: message, timestamp: DateTime.utc_now()}]
+    socket = assign(socket, :messages, messages, thinking: true)
+
+    # Send to AI service (we'll implement this later)
+    # For now, simulate a response
+    send(self(), {:ai_response, message})
+
     {:noreply, socket}
   end
 
   @impl true
-  def handle_info(:simulate_ai_response, socket) do
-    responses = [
-      "I've found several great spots near you! Would you like to see them on the map?",
-      "Based on your location, I recommend Mama's Kitchen for authentic Kenyan food. 5 min walk, 95% safety rating.",
-      "There's a music festival in Westlands tonight at 7 PM. Would you like me to show you the route?",
-      "Current safety score in your area is 92%. The park is well-lit and busy with evening joggers."
-    ]
-    
-    response = Enum.random(responses)
-    
-    messages = socket.assigns.chat_messages ++ [%{role: "assistant", content: response}]
-    socket = assign(socket, chat_messages: messages, chat_loading: false)
-    
-    {:noreply, socket}
+  def handle_info({:ai_response, user_message}, socket) do
+    # Placeholder AI response - will be replaced with real LLM call
+    response = """
+    I understand you're asking about "#{user_message}". 
+    With your current location in Nairobi, I can help you find local spots, 
+    check safety conditions, or give you directions. What would you like to do?
+    """
+
+    messages = socket.assigns.messages ++ [%{role: :assistant, content: response, timestamp: DateTime.utc_now()}]
+
+    {:noreply, assign(socket, :messages, messages, thinking: false)}
   end
 
-  defp get_session(socket, key) do
-    case get_connect_params(socket) do
-      %{"session" => session} -> Map.get(session, key)
-      _ -> nil
-    end
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div class="h-full flex flex-col max-w-3xl mx-auto px-4 py-6">
+      <!-- Welcome / Empty State -->
+      <div :if={@messages == []} class="flex-1 flex flex-col items-center justify-center text-center space-y-6">
+        <div class="w-20 h-20 rounded-full bg-verdant-forest/10 flex items-center justify-center">
+          <span class="text-4xl">🌍</span>
+        </div>
+        <h1 class="text-2xl font-semibold text-onyx-deep">Welcome to Mtaani</h1>
+        <p class="text-onyx-mauve max-w-md">
+          Your personal guide to the streets of Kenya. Ask me anything — 
+          from finding local food to checking safety conditions.
+        </p>
+        
+        <!-- Quick suggestions -->
+        <div class="flex flex-wrap justify-center gap-2 pt-4">
+          <.suggestion_chip label="🍽️ Local food near me" query="Find me local food within walking distance" />
+          <.suggestion_chip label="🛡️ Is it calm here?" query="Is the area around me calm right now?" />
+          <.suggestion_chip label="🚗 How to get to the airport" query="Best way to get to Jomo Kenyatta Airport?" />
+          <.suggestion_chip label="🎉 What's happening?" query="Any events or vibes happening today?" />
+          <.suggestion_chip label="🏨 Budget places to stay" query="Find me budget-friendly places to stay in CBD" />
+        </div>
+      </div>
+
+      <!-- Chat Messages -->
+      <div :if={@messages != []} class="flex-1 overflow-y-auto space-y-4 pb-4">
+        <%= for message <- @messages do %>
+          <div class={[
+            "flex",
+            message.role == :user && "justify-end",
+            message.role == :assistant && "justify-start"
+          ]}>
+            <div class={[
+              "max-w-[85%] rounded-2xl px-4 py-3",
+              message.role == :user && "bg-verdant-forest text-white",
+              message.role == :assistant && "bg-onyx-mauve/10 text-onyx-deep"
+            ]}>
+              <p class="text-sm"><%= message.content %></p>
+              <p class="text-xs opacity-60 mt-1">
+                <%= Calendar.strftime(message.timestamp, "%H:%M") %>
+              </p>
+            </div>
+          </div>
+        <% end %>
+        
+        <div :if={@thinking} class="flex justify-start">
+          <div class="bg-onyx-mauve/10 rounded-2xl px-4 py-3">
+            <div class="flex space-x-1">
+              <div class="w-2 h-2 bg-verdant-forest rounded-full animate-bounce"></div>
+              <div class="w-2 h-2 bg-verdant-forest rounded-full animate-bounce [animation-delay:0.2s]"></div>
+              <div class="w-2 h-2 bg-verdant-forest rounded-full animate-bounce [animation-delay:0.4s]"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input Area -->
+      <div class="border-t border-onyx-mauve/20 pt-4 mt-2">
+        <form phx-submit="send-message" class="flex gap-2">
+          <input
+            type="text"
+            name="message"
+            value={@input_text}
+            phx-change="update-input"
+            placeholder="Ask me anything..."
+            class="flex-1 bg-onyx-mauve/5 border border-onyx-mauve/20 rounded-full px-5 py-3 text-onyx-deep placeholder-onyx-mauve focus:outline-none focus:border-verdant-forest focus:ring-1 focus:ring-verdant-forest"
+          />
+          <button
+            type="submit"
+            class="bg-verdant-forest hover:bg-verdant-deep text-white rounded-full px-5 py-3 transition-colors disabled:opacity-50"
+            disabled={@thinking}
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+          </button>
+        </form>
+        
+        <!-- Location status bar -->
+        <div class="flex justify-between items-center mt-3 text-xs text-onyx-mauve">
+          <div class="flex items-center gap-2">
+            <span :if={@user_location} class="flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-verdant-sage"></span>
+              <span>📍 Located in Nairobi</span>
+            </span>
+            <span :if={!@user_location} class="flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-onyx-mauve animate-pulse"></span>
+              <span>📍 Getting your location...</span>
+            </span>
+          </div>
+          <div :if={@current_vibe != :unknown}>
+            <.vibe_badge vibe={@current_vibe} />
+          </div>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  defp suggestion_chip(assigns) do
+    ~H"""
+    <button
+      phx-click="send-message"
+      phx-value-message={@query}
+      class="px-4 py-2 bg-onyx-mauve/10 hover:bg-onyx-mauve/20 rounded-full text-sm text-onyx-deep transition-colors"
+    >
+      <%= @label %>
+    </button>
+    """
+  end
+
+  defp vibe_badge(assigns) do
+    ~H"""
+    <span class={[
+      "px-2 py-0.5 rounded-full text-xs font-medium",
+      @vibe == :calm && "bg-verdant-sage/20 text-verdant-sage",
+      @vibe == :bustling && "bg-verdant-clay/20 text-verdant-clay",
+      @vibe == :caution && "bg-verdant-clay/30 text-verdant-clay"
+    ]}>
+      <%= case @vibe do %>
+        <% :calm -> %>🟢 Calm area
+        <% :bustling -> %>🟡 Bustling
+        <% :caution -> %>🟠 Caution advised
+        <% _ -> %>❔ Unknown
+      <% end %>
+    </span>
+    """
   end
 end
-    
