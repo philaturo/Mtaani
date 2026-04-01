@@ -10,9 +10,8 @@
     <.live_title suffix=" · Mtaani">
       <%= assigns[:page_title] || "Mtaani" %>
     </.live_title>
-    <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
-    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
-    </script>
+    <link phx-track-static rel="stylesheet" href="/assets/app.css" />
+    <script defer phx-track-static type="text/javascript" src="/assets/app.js"></script>
     <link rel="manifest" href="/manifest.json" />
   </head>
   <body class="bg-onyx text-onyx-deep antialiased h-full">
@@ -40,16 +39,7 @@
       <%= @inner_content %>
     </main>
 
-    <%= if assigns[:show_modal] do %>
-      <div id="global-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-onyx-deep/50 backdrop-blur-sm">
-        <div class="bg-onyx rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-auto">
-          <%= @modal_content %>
-        </div>
-      </div>
-    <% end %>
-
     <script>
-      // Simple theme toggle (persist to localStorage)
       const themeToggle = document.getElementById('theme-toggle');
       if (themeToggle) {
         themeToggle.addEventListener('click', () => {
