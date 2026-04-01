@@ -6,5 +6,8 @@ defmodule MtaaniWeb.Layouts do
   """
   use MtaaniWeb, :html
 
+  # Import the BottomNav component
+  import MtaaniWeb.BottomNav
+
   embed_templates "layouts/*"
 end
