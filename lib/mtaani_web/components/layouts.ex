@@ -5,7 +5,7 @@ defmodule MtaaniWeb.Layouts do
   See the `layouts` directory for all templates available.
   """
   use MtaaniWeb, :html
-
+  
   # Import the BottomNav component
   import MtaaniWeb.BottomNav
 
