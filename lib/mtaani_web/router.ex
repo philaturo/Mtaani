@@ -17,7 +17,13 @@ defmodule MtaaniWeb.Router do
   scope "/", MtaaniWeb do
     pipe_through :browser
 
+    # Main routes
     live "/", HomeLive, :index
+    live "/explore", ExploreLive, :index
+    live "/plan", PlanLive, :index
+    live "/profile", ProfileLive, :index
+
+    # Health check
     get "/health", PageController, :health
   end
 
