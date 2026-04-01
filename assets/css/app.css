@@ -1,24 +1,41 @@
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* Custom scrollbar for chat messages */
+/* Custom color variables */
+@layer base {
+  :root {
+    /* Onyx Neutral Palette */
+    --color-onyx: #fffcfc;
+    --color-onyx-mauve: #bcabb0;
+    --color-onyx-deep: #785964;
+    --color-onyx-plum: #5d3543;
+
+    /* Verdant Luxe Palette */
+    --color-verdant-clay: #b67e7d;
+    --color-verdant-sage: #5da87a;
+    --color-verdant-forest: #2e6b46;
+    --color-verdant-deep: #17402a;
+  }
+}
+
+/* Custom scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: #bcabb0;
+  background: var(--color-onyx-mauve);
   border-radius: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #2e6b46;
+  background: var(--color-verdant-forest);
   border-radius: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #17402a;
+  background: var(--color-verdant-deep);
 }
 
 /* Typing animation */
