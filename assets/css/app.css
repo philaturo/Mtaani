@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom color variables */
 @layer base {
   :root {
     /* Onyx Neutral Palette */
@@ -17,6 +16,64 @@
     --color-verdant-forest: #2e6b46;
     --color-verdant-deep: #17402a;
   }
+}
+
+/* Utility classes for all colors */
+.bg-onyx {
+  background-color: var(--color-onyx);
+}
+.bg-onyx-mauve {
+  background-color: var(--color-onyx-mauve);
+}
+.bg-onyx-deep {
+  background-color: var(--color-onyx-deep);
+}
+.bg-onyx-plum {
+  background-color: var(--color-onyx-plum);
+}
+.bg-verdant-clay {
+  background-color: var(--color-verdant-clay);
+}
+.bg-verdant-sage {
+  background-color: var(--color-verdant-sage);
+}
+.bg-verdant-forest {
+  background-color: var(--color-verdant-forest);
+}
+.bg-verdant-deep {
+  background-color: var(--color-verdant-deep);
+}
+
+.text-onyx {
+  color: var(--color-onyx);
+}
+.text-onyx-mauve {
+  color: var(--color-onyx-mauve);
+}
+.text-onyx-deep {
+  color: var(--color-onyx-deep);
+}
+.text-onyx-plum {
+  color: var(--color-onyx-plum);
+}
+.text-verdant-clay {
+  color: var(--color-verdant-clay);
+}
+.text-verdant-sage {
+  color: var(--color-verdant-sage);
+}
+.text-verdant-forest {
+  color: var(--color-verdant-forest);
+}
+.text-verdant-deep {
+  color: var(--color-verdant-deep);
+}
+
+.border-onyx-mauve {
+  border-color: var(--color-onyx-mauve);
+}
+.border-verdant-forest {
+  border-color: var(--color-verdant-forest);
 }
 
 /* Custom scrollbar */
