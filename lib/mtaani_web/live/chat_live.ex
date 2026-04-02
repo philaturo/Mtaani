@@ -12,6 +12,7 @@ defmodule MtaaniWeb.ChatLive do
       |> assign(:selected_conversation, nil)
       |> assign(:messages, [])
       |> assign(:input_text, "")
+      
 
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Mtaani.PubSub, "online_count")
@@ -82,6 +83,11 @@ defmodule MtaaniWeb.ChatLive do
   def handle_event("trigger_emergency", _, socket) do
     {:noreply, push_event(socket, "trigger_emergency", %{})}
   end
+
+ @impl true
+def handle_event("logout", _, socket) do
+  {:noreply, push_navigate(socket, to: "/logout")}
+end
 
   @impl true
   def render(assigns) do
