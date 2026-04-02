@@ -66,7 +66,7 @@
               <a href="/profile" class="block px-4 py-2 text-sm text-onyx-deep hover:bg-verdant-sage/10">Your Profile</a>
               <a href="/settings" class="block px-4 py-2 text-sm text-onyx-deep hover:bg-verdant-sage/10">Settings</a>
               <hr class="my-1 border-onyx-mauve/20">
-              <a href="/logout" class="block px-4 py-2 text-sm text-verdant-clay hover:bg-verdant-clay/10">Sign Out</a>
+              <a href="/logout" phx-click={Phoenix.LiveView.JS.push("logout")} class="block px-4 py-2 text-sm text-verdant-clay hover:bg-verdant-clay/10">Sign Out</a>
             </div>
           </div>
         </div>
