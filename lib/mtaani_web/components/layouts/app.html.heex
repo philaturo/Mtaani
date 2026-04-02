@@ -15,8 +15,8 @@
     <script defer phx-track-static type="text/javascript" src="/assets/js/app.js"></script>
   </head>
   <body class="bg-onyx text-onyx-deep antialiased h-full">
-    <!-- Header with gradient -->
-    <header class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-onyx to-onyx-mauve/5 backdrop-blur-md border-b border-onyx-mauve/20 px-4 py-3">
+    <!-- Header with phx-update="ignore" to prevent re-rendering -->
+    <header id="main-header" phx-update="ignore" class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-onyx to-onyx-mauve/5 backdrop-blur-md border-b border-onyx-mauve/20 px-4 py-3">
       <div class="max-w-7xl mx-auto flex justify-between items-center">
         <div class="flex items-center gap-2">
           <span class="text-verdant-forest text-xl font-semibold tracking-tight">Mtaani</span>
@@ -24,7 +24,7 @@
         </div>
         <div class="flex items-center gap-3">
           <!-- ONLINE STATUS INDICATOR -->
-          <div class="flex items-center gap-1 mr-2" id="online-indicator" phx-hook="OnlineTracker">
+          <div id="online-indicator" phx-hook="OnlineTracker" phx-update="ignore" class="flex items-center gap-1 mr-2">
             <span class="relative inline-block">
               <span class="w-2 h-2 bg-verdant-sage rounded-full animate-pulse"></span>
             </span>
@@ -56,7 +56,7 @@
           </button>
           
           <!-- Profile dropdown -->
-          <div class="relative">
+          <div id="profile-menu-container" phx-update="ignore" class="relative">
             <button phx-click={Phoenix.LiveView.JS.toggle(to: "#profile-menu")} class="w-8 h-8 rounded-full bg-verdant-sage/20 flex items-center justify-center text-verdant-forest">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
