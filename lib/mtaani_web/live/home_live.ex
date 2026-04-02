@@ -15,6 +15,7 @@ defmodule MtaaniWeb.HomeLive do
       |> assign(:thinking, false)
       |> assign(:user_location, nil)
       |> assign(:current_vibe, :unknown)
+      
 
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Mtaani.PubSub, "online_count")
@@ -138,8 +139,13 @@ defmodule MtaaniWeb.HomeLive do
   def handle_event("trigger_emergency", _, socket) do
     {:noreply, push_event(socket, "trigger_emergency", %{})}
   end
-  
+
   # ==================== END handle_event/3 FUNCTIONS ====================
+
+  @impl true
+def handle_event("logout", _, socket) do
+  {:noreply, push_navigate(socket, to: "/logout")}
+end
 
   @impl true
   def render(assigns) do
