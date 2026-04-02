@@ -29,6 +29,18 @@ defmodule MtaaniWeb.PlanLive do
   end
 
   @impl true
+  def handle_event("user_online", %{"user_id" => user_id}, socket) do
+    MtaaniWeb.OnlineTracker.add_user(user_id)
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("user_offline", %{"user_id" => user_id}, socket) do
+    MtaaniWeb.OnlineTracker.remove_user(user_id)
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_event("new_trip", _, socket) do
     {:noreply, assign(socket, :show_form, true)}
   end
