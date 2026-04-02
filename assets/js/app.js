@@ -2,6 +2,9 @@ import { Socket } from "phoenix";
 import { LiveSocket } from "phoenix_live_view";
 import topbar from "../vendor/topbar";
 import { OnlineTracker } from "./hooks/online_tracker";
+import { MapLibreHook } from "./hooks/maplibre";
+import { ScrollToBottom } from "./hooks/scroll_to_bottom";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 // Get CSRF token from meta tag
 let csrfToken = document
@@ -12,8 +15,9 @@ let csrfToken = document
 let liveSocket = new LiveSocket("/live", Socket, {
   params: csrfToken ? { _csrf_token: csrfToken } : {},
   hooks: {
-    //MapLibre: MapLibreHook,
+    MapLibre: MapLibreHook,
     OnlineTracker: OnlineTracker,
+    ScrollToBottom: ScrollToBottom,
     Geolocation: {
       mounted() {
         if ("geolocation" in navigator) {
