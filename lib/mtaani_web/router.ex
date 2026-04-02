@@ -17,15 +17,14 @@ defmodule MtaaniWeb.Router do
   scope "/", MtaaniWeb do
     pipe_through :browser
 
-    # Main routes
-    live "/", HomeLive, :index
-    live "/explore", ExploreLive, :index
-    live "/plan", PlanLive, :index
-    live "/profile", ProfileLive, :index
+  live "/", HomeLive, :index
+  live "/map", MapLive, :index
+  live "/chat", ChatLive, :index
+  live "/groups", GroupsLive, :index
+  live "/plan", PlanLive, :index
 
-    # Health check
-    get "/health", PageController, :health
-  end
+  get "/health", PageController, :health
+end
 
   # WhatsApp webhook endpoint (for later)
   scope "/api", MtaaniWeb do
