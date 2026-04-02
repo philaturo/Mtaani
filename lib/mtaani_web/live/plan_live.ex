@@ -87,6 +87,11 @@ defmodule MtaaniWeb.PlanLive do
     {:noreply, push_event(socket, "trigger_emergency", %{})}
   end
 
+ @impl true
+def handle_event("logout", _, socket) do
+  {:noreply, push_navigate(socket, to: "/logout")}
+end
+
   @impl true
   def render(assigns) do
     ~H"""
