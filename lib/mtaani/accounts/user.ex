@@ -7,6 +7,7 @@ defmodule Mtaani.Accounts.User do
     field :name, :string
     field :email, :string
     field :phone, :string
+    field :password, :string, virtual: true
     field :password_hash, :string
     field :phone_verified, :boolean, default: false
     field :verification_code, :string
@@ -23,7 +24,7 @@ defmodule Mtaani.Accounts.User do
   def registration_changeset(user, attrs) do
     user
     |> cast(attrs, [:name, :email, :phone, :password])
-    |> validate_required([:name, :phone])
+    |> validate_required([:name, :phone, :password])
     |> validate_phone()
     |> unique_constraint(:phone)
     |> put_verification_code()
@@ -37,7 +38,7 @@ defmodule Mtaani.Accounts.User do
 
   defp validate_phone(changeset) do
     changeset
-    |> validate_format(:phone, ~r/^07\d{8}$/, message: "must be a valid Kenyan phone number (07xxxxxxxx)")
+    |> validate_format(:phone, ~r/^\+2547\d{8}$/, message: "must be a valid Kenyan phone number (+2547XXXXXXXX)")
   end
 
   defp put_verification_code(changeset) do

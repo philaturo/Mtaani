@@ -5,13 +5,25 @@ defmodule Mtaani.Accounts do
 
   alias Mtaani.Repo
   alias Mtaani.Accounts.User
-  
+
+  defp format_phone(nil), do: nil
+  defp format_phone(phone) do
+    if is_binary(phone) and String.length(phone) == 10 and String.starts_with?(phone, "07") do
+      "+254" <> String.slice(phone, 1, 9)
+    else
+      nil
+    end
+  end
 
   @doc """
   Get a user by phone number.
   """
   def get_user_by_phone(phone) do
-    Repo.get_by(User, phone: format_phone(phone))
+    if is_nil(phone) do
+      nil
+    else
+      Repo.get_by(User, phone: format_phone(phone))
+    end
   end
 
   @doc """
@@ -25,12 +37,26 @@ defmodule Mtaani.Accounts do
   Create a new user with phone verification.
   """
   def create_user(attrs) do
-    attrs = Map.put(attrs, "phone", format_phone(attrs["phone"]))
-
+  # Convert atom keys to string keys
+  attrs = for {key, val} <- attrs, into: %{}, do: {to_string(key), val}
+  
+  raw_phone = attrs["phone"]
+  
+  phone = if is_binary(raw_phone) and String.length(raw_phone) == 10 and String.starts_with?(raw_phone, "07") do
+    "+254" <> String.slice(raw_phone, 1, 9)
+  else
+    nil
+  end
+  
+  if is_nil(phone) do
+    {:error, "Phone number is required. Please use format: 07XXXXXXXX"}
+  else
+    attrs = Map.put(attrs, "phone", phone)
     %User{}
     |> User.registration_changeset(attrs)
     |> Repo.insert()
   end
+end
 
   @doc """
   Generate a 6-digit verification code.
@@ -45,7 +71,6 @@ defmodule Mtaani.Accounts do
   Send verification code via SMS.
   """
   def send_verification_code(phone, code) do
-    # Placeholder - integrate with Africa's Talking or Twilio
     IO.puts("SMS to #{phone}: Your Mtaani verification code is: #{code}")
     {:ok, "sent"}
   end
@@ -61,12 +86,5 @@ defmodule Mtaani.Accounts do
     else
       {:error, "Invalid verification code"}
     end
-  end
-
-  defp format_phone(phone) do
-    # Convert 07XXXXXXXX to +2547XXXXXXXX
-    phone
-    |> String.replace(~r/^0/, "+254")
-    |> String.replace(~r/^\+2547/, "+2547")
   end
 end
