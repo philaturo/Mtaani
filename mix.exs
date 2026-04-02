@@ -42,6 +42,7 @@ defmodule Mtaani.MixProject do
       {:geo, "~> 3.5"},
       {:ecto_sql, "~> 3.0"},
       {:httpoison, "~> 2.0"},
+       {:pbkdf2_elixir, "~> 2.0"},
       
     ]
   end
