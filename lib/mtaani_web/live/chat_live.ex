@@ -7,12 +7,11 @@ defmodule MtaaniWeb.ChatLive do
       socket
       |> assign(:active_tab, "chat")
       |> assign(:show_emergency, false)
-      |> assign(:show_emergency, false)
-      |> assign(:conversations, [])
+      |> assign(:filter, "all") # all, unread, favorites
+      |> assign(:search_query, "")
+      |> assign(:conversations, get_conversations())
       |> assign(:selected_conversation, nil)
       |> assign(:messages, [])
-      |> assign(:input_text, "")
-      
 
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Mtaani.PubSub, "online_count")
@@ -22,28 +21,136 @@ defmodule MtaaniWeb.ChatLive do
   end
 
   @impl true
-  def handle_info({:online_count, count}, socket) do
-    {:noreply, push_event(socket, "online_count_update", %{count: count})}
+  def render(assigns) do
+    ~H"""
+    <div class="pb-20 h-full flex flex-col">
+      <!-- Header with Search -->
+      <div class="bg-white border-b border-onyx-mauve/20 px-4 py-3">
+        <div class="flex justify-between items-center mb-3">
+          <h1 class="text-xl font-semibold text-onyx-deep">Chats</h1>
+          <button class="text-verdant-forest">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+          </button>
+        </div>
+        
+        <!-- Search Bar -->
+        <div class="relative">
+          <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-onyx-mauve" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Ask Mtaani or Search"
+            value={@search_query}
+            phx-change="search"
+            class="w-full bg-onyx-mauve/5 border border-onyx-mauve/20 rounded-full py-2 pl-10 pr-4 text-onyx-deep placeholder-onyx-mauve focus:outline-none focus:border-verdant-forest"
+          />
+        </div>
+      </div>
+
+      <!-- Filter Tabs -->
+      <div class="flex border-b border-onyx-mauve/20 px-4">
+        <button phx-click="set_filter" phx-value-filter="all" class={[
+          "flex-1 py-3 text-sm font-medium transition-colors",
+          @filter == "all" && "text-verdant-forest border-b-2 border-verdant-forest",
+          @filter != "all" && "text-onyx-mauve hover:text-onyx-deep"
+        ]}>
+          All Chats
+        </button>
+        <button phx-click="set_filter" phx-value-filter="unread" class={[
+          "flex-1 py-3 text-sm font-medium transition-colors",
+          @filter == "unread" && "text-verdant-forest border-b-2 border-verdant-forest",
+          @filter != "unread" && "text-onyx-mauve hover:text-onyx-deep"
+        ]}>
+          Unread
+        </button>
+        <button phx-click="set_filter" phx-value-filter="favorites" class={[
+          "flex-1 py-3 text-sm font-medium transition-colors",
+          @filter == "favorites" && "text-verdant-forest border-b-2 border-verdant-forest",
+          @filter != "favorites" && "text-onyx-mauve hover:text-onyx-deep"
+        ]}>
+          Favorites
+        </button>
+      </div>
+
+      <!-- Conversations List -->
+      <div class="flex-1 overflow-y-auto">
+        <%= for conv <- @conversations do %>
+          <button
+            phx-click="select_conversation"
+            phx-value-id={conv.id}
+            class="w-full p-4 border-b border-onyx-mauve/10 hover:bg-onyx-mauve/5 transition-colors"
+          >
+            <div class="flex items-center gap-3">
+              <div class="relative">
+                <div class="w-12 h-12 rounded-full bg-verdant-forest/10 flex items-center justify-center">
+                  <span class="text-verdant-forest font-semibold"><%= conv.name |> String.slice(0, 1) |> String.upcase() %></span>
+                </div>
+                <%= if conv.online do %>
+                  <span class="absolute bottom-0 right-0 w-3 h-3 bg-verdant-sage rounded-full border-2 border-white"></span>
+                <% end %>
+              </div>
+              <div class="flex-1">
+                <div class="flex justify-between items-baseline">
+                  <h3 class="font-medium text-onyx-deep"><%= conv.name %></h3>
+                  <span class="text-xs text-onyx-mauve"><%= conv.time %></span>
+                </div>
+                <p class="text-sm text-onyx-mauve truncate">
+                  <%= if conv.unread > 0 do %>
+                    <span class="font-medium text-verdant-forest"><%= conv.unread %> new messages</span>
+                  <% else %>
+                    <%= conv.last_message %>
+                  <% end %>
+                </p>
+              </div>
+              <%= if conv.unread > 0 do %>
+                <div class="w-5 h-5 bg-verdant-forest rounded-full flex items-center justify-center">
+                  <span class="text-xs text-white"><%= conv.unread %></span>
+                </div>
+              <% end %>
+            </div>
+          </button>
+        <% end %>
+      </div>
+    </div>
+    """
   end
 
+  defp get_conversations do
+    # Fetch conversations from database
+    []
+  end
+
+  # Navigation handlers
   @impl true
   def handle_event("navigate", %{"page" => page}, socket) do
     {:noreply, push_navigate(socket, to: "/#{page}")}
   end
 
   @impl true
-  def handle_event("user_online", %{"user_id" => user_id}, socket) do
-    MtaaniWeb.OnlineTracker.add_user(user_id)
-    {:noreply, socket}
+  def handle_event("logout", _, socket) do
+    {:noreply, push_navigate(socket, to: "/logout")}
   end
 
   @impl true
-  def handle_event("user_offline", %{"user_id" => user_id}, socket) do
-    MtaaniWeb.OnlineTracker.remove_user(user_id)
-    {:noreply, socket}
+  def handle_event("set_filter", %{"filter" => filter}, socket) do
+    {:noreply, assign(socket, :filter, filter)}
   end
 
-    # Emergency Modal Handlers
+  @impl true
+  def handle_event("search", %{"value" => query}, socket) do
+    {:noreply, assign(socket, :search_query, query)}
+  end
+
+  def handle_event("select_conversation", %{"id" => _id}, socket) do
+  # This will be implemented when we add conversation functionality
+  # The underscore tells Elixir this variable is intentionally unused
+  {:noreply, socket}
+end
+
+  # Emergency handlers
   @impl true
   def handle_event("open_emergency", _, socket) do
     {:noreply, assign(socket, :show_emergency, true)}
@@ -54,62 +161,16 @@ defmodule MtaaniWeb.ChatLive do
     {:noreply, assign(socket, :show_emergency, false)}
   end
 
+  # Online tracker handlers
   @impl true
-  def handle_event("call_police", _, socket) do
-    {:noreply, push_event(socket, "call_number", %{number: "999"})}
+  def handle_event("user_online", %{"user_id" => user_id}, socket) do
+    MtaaniWeb.OnlineTracker.add_user(user_id)
+    {:noreply, socket}
   end
 
   @impl true
-  def handle_event("call_ambulance", _, socket) do
-    {:noreply, push_event(socket, "call_number", %{number: "911"})}
-  end
-
-  @impl true
-  def handle_event("call_contact", %{"phone" => phone}, socket) do
-    {:noreply, push_event(socket, "call_number", %{number: phone})}
-  end
-
-  @impl true
-  def handle_event("share_location", _, socket) do
-    {:noreply, push_event(socket, "share_location", %{})}
-  end
-
-  @impl true
-  def handle_event("sos_alert", _, socket) do
-    {:noreply, push_event(socket, "sos_alert", %{})}
-  end
-
-  @impl true
-  def handle_event("trigger_emergency", _, socket) do
-    {:noreply, push_event(socket, "trigger_emergency", %{})}
-  end
-
- @impl true
-def handle_event("logout", _, socket) do
-  {:noreply, push_navigate(socket, to: "/logout")}
-end
-
-  @impl true
-  def render(assigns) do
-    ~H"""
-    <div class="pb-20">
-      <div class="bg-white border-b border-onyx-mauve/20 px-4 py-4">
-        <h1 class="text-xl font-semibold text-onyx-deep">Messages</h1>
-        <p class="text-sm text-onyx-mauve">Chat with fellow travelers</p>
-      </div>
-
-      <div class="p-4">
-        <div class="text-center py-12">
-          <div class="w-16 h-16 rounded-full bg-onyx-mauve/10 flex items-center justify-center mx-auto mb-4">
-            <svg class="w-8 h-8 text-onyx-deep" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
-            </svg>
-          </div>
-          <p class="text-onyx-deep">No messages yet</p>
-          <p class="text-sm text-onyx-mauve mt-1">Start a conversation with other travelers</p>
-        </div>
-      </div>
-    </div>
-    """
+  def handle_event("user_offline", %{"user_id" => user_id}, socket) do
+    MtaaniWeb.OnlineTracker.remove_user(user_id)
+    {:noreply, socket}
   end
 end
