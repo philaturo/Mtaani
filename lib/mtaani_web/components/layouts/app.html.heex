@@ -17,58 +17,73 @@
   <body class="bg-onyx text-onyx-deep antialiased h-full">
     <!-- Header with gradient -->
     <header class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-onyx to-onyx-mauve/5 backdrop-blur-md border-b border-onyx-mauve/20 px-4 py-3">
-  <div class="max-w-7xl mx-auto flex justify-between items-center">
-    <div class="flex items-center gap-2">
-      <span class="text-verdant-forest text-xl font-semibold tracking-tight">Mtaani</span>
-      <span class="text-xs text-onyx-deep px-2 py-0.5 bg-verdant-sage/10 rounded-full">community</span>
-    </div>
-    <div class="flex items-center gap-3">
-      <!-- ONLINE STATUS INDICATOR -->
-<div class="flex items-center gap-1 mr-2" id="online-indicator" phx-hook="OnlineTracker">
-  <span class="relative inline-block">
-    <span class="w-2 h-2 bg-verdant-sage rounded-full animate-pulse"></span>
-  </span>
-  <span class="text-xs text-onyx-mauve hidden sm:inline">
-    <span id="online-count">0</span> online
-  </span>
-</div>
-      
-      <!-- Search -->
-      <button class="text-onyx-deep hover:text-verdant-forest transition-colors">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-        </svg>
-      </button>
-      
-      <!-- Notifications -->
-      <button class="text-onyx-deep hover:text-verdant-forest transition-colors relative">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0" />
-        </svg>
-        <span class="absolute -top-1 -right-1 w-2 h-2 bg-verdant-clay rounded-full"></span>
-      </button>
-      
-      <!-- Profile dropdown -->
-<div class="relative">
-  <button phx-click={Phoenix.LiveView.JS.toggle(to: "#profile-menu")} class="w-8 h-8 rounded-full bg-verdant-sage/20 flex items-center justify-center text-verdant-forest">
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-    </svg>
-  </button>
-  <div id="profile-menu" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-onyx-mauve/20 hidden" phx-click-away={Phoenix.LiveView.JS.hide(to: "#profile-menu")}>
-    <a href="/profile" class="block px-4 py-2 text-sm text-onyx-deep hover:bg-verdant-sage/10">Your Profile</a>
-    <a href="/settings" class="block px-4 py-2 text-sm text-onyx-deep hover:bg-verdant-sage/10">Settings</a>
-    <hr class="my-1 border-onyx-mauve/20">
-    <a href="/logout" class="block px-4 py-2 text-sm text-verdant-clay hover:bg-verdant-clay/10">Sign Out</a>
-  </div>
-</div>
-    </div>
-  </div>
-</header>
+      <div class="max-w-7xl mx-auto flex justify-between items-center">
+        <div class="flex items-center gap-2">
+          <span class="text-verdant-forest text-xl font-semibold tracking-tight">Mtaani</span>
+          <span class="text-xs text-onyx-deep px-2 py-0.5 bg-verdant-sage/10 rounded-full">community</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <!-- ONLINE STATUS INDICATOR -->
+          <div class="flex items-center gap-1 mr-2" id="online-indicator" phx-hook="OnlineTracker">
+            <span class="relative inline-block">
+              <span class="w-2 h-2 bg-verdant-sage rounded-full animate-pulse"></span>
+            </span>
+            <span class="text-xs text-onyx-mauve hidden sm:inline">
+              <span id="online-count">0</span> online
+            </span>
+          </div>
+          
+          <!-- Search -->
+          <button class="text-onyx-deep hover:text-verdant-forest transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+          </button>
+          
+          <!-- Notifications -->
+          <button class="text-onyx-deep hover:text-verdant-forest transition-colors relative">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0" />
+            </svg>
+            <span class="absolute -top-1 -right-1 w-2 h-2 bg-verdant-clay rounded-full"></span>
+          </button>
+          
+          <!-- Emergency Button -->
+          <button phx-click={Phoenix.LiveView.JS.push("open_emergency")} class="text-onyx-deep hover:text-verdant-clay transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+          </button>
+          
+          <!-- Profile dropdown -->
+          <div class="relative">
+            <button phx-click={Phoenix.LiveView.JS.toggle(to: "#profile-menu")} class="w-8 h-8 rounded-full bg-verdant-sage/20 flex items-center justify-center text-verdant-forest">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+              </svg>
+            </button>
+            <div id="profile-menu" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-onyx-mauve/20 hidden" phx-click-away={Phoenix.LiveView.JS.hide(to: "#profile-menu")}>
+              <a href="/profile" class="block px-4 py-2 text-sm text-onyx-deep hover:bg-verdant-sage/10">Your Profile</a>
+              <a href="/settings" class="block px-4 py-2 text-sm text-onyx-deep hover:bg-verdant-sage/10">Settings</a>
+              <hr class="my-1 border-onyx-mauve/20">
+              <a href="/logout" class="block px-4 py-2 text-sm text-verdant-clay hover:bg-verdant-clay/10">Sign Out</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
 
     <main class="pt-16 h-full pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-  <%= @inner_content %>
-</main>
+      <%= @inner_content %>
+    </main>
+
+    <!-- Emergency Modal -->
+    <%= if @show_emergency do %>
+      <.live_component
+        module={MtaaniWeb.EmergencyModalLive}
+        id="emergency-modal"
+      />
+    <% end %>
 
     <!-- Bottom Navigation with active colors -->
     <.bottom_nav active={assigns[:active_tab] || "home"} />
