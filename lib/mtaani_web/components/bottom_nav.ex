@@ -2,7 +2,7 @@ defmodule MtaaniWeb.BottomNav do
   use Phoenix.Component
   import Phoenix.LiveView.JS
 
-  attr :active, :string, required: true, values: ["home", "explore", "chat", "plan", "profile"]
+  attr :active, :string, required: true, values: ["home", "map", "chat", "groups", "plan"]
 
   def bottom_nav(assigns) do
     ~H"""
@@ -13,6 +13,12 @@ defmodule MtaaniWeb.BottomNav do
           label="Home"
           active={@active == "home"}
           phx-click={push("navigate", value: %{page: "home"})}
+        />
+        <.nav_item
+          icon="map"
+          label="Map"
+          active={@active == "map"}
+          phx-click={push("navigate", value: %{page: "map"})}
         />
         <.nav_item
           icon="message-square"
@@ -31,12 +37,6 @@ defmodule MtaaniWeb.BottomNav do
           label="Plan"
           active={@active == "plan"}
           phx-click={push("navigate", value: %{page: "plan"})}
-        />
-        <.nav_item
-          icon="user"
-          label="Profile"
-          active={@active == "profile"}
-          phx-click={push("navigate", value: %{page: "profile"})}
         />
       </div>
     </nav>
@@ -87,6 +87,17 @@ defmodule MtaaniWeb.BottomNav do
       </svg>
     <% end %>
 
+    <%= if @name == "map" and @active do %>
+      <svg class="w-6 h-6 text-verdant-forest" fill="currentColor" viewBox="0 0 24 24">
+        <path fill-rule="evenodd" d="M8.161 2.58a1.875 1.875 0 011.678 0l4.993 2.498c.106.052.23.052.336 0l3.869-1.935A1.875 1.875 0 0121.75 4.82v12.485c0 .71-.39 1.36-1.01 1.722l-4.993 2.497a1.875 1.875 0 01-1.678 0l-4.993-2.497a1.875 1.875 0 00-.336 0l-3.869 1.935A1.875 1.875 0 012.25 19.18V6.695c0-.71.39-1.36 1.01-1.722l4.993-2.497a1.875 1.875 0 01.336 0z" clip-rule="evenodd" />
+      </svg>
+    <% end %>
+    <%= if @name == "map" and not @active do %>
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+      </svg>
+    <% end %>
+
     <%= if @name == "message-square" and @active do %>
       <svg class="w-6 h-6 text-verdant-forest" fill="currentColor" viewBox="0 0 24 24">
         <path d="M4.913 2.658c2.075-.27 4.19-.408 6.337-.408 2.147 0 4.262.139 6.337.408 1.922.25 3.291 1.861 3.405 3.727a4.403 4.403 0 00-1.032-.211 50.89 50.89 0 00-8.42 0c-2.358.196-4.04 2.19-4.04 4.434v4.286a4.47 4.47 0 002.433 3.984L7.28 21.53A.75.75 0 016 21v-4.03a48.527 48.527 0 01-1.087-.128C2.905 16.58 1.5 14.833 1.5 12.862V6.638c0-1.97 1.405-3.718 3.413-3.979z" />
@@ -117,17 +128,6 @@ defmodule MtaaniWeb.BottomNav do
     <%= if @name == "calendar" and not @active do %>
       <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-      </svg>
-    <% end %>
-
-    <%= if @name == "user" and @active do %>
-      <svg class="w-6 h-6 text-verdant-forest" fill="currentColor" viewBox="0 0 24 24">
-        <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clip-rule="evenodd" />
-      </svg>
-    <% end %>
-    <%= if @name == "user" and not @active do %>
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
       </svg>
     <% end %>
     """
