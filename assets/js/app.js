@@ -190,5 +190,23 @@ window.addEventListener("phx:trigger_emergency", (e) => {
   }
 });
 
+// ==================== THEME TOGGLE FUNCTIONALITY - ADD THIS BLOCK HERE ====================
+// Theme toggle functionality
+const themeToggle = document.getElementById("theme-toggle");
+if (themeToggle) {
+  // Check for saved theme preference
+  const savedTheme = localStorage.getItem("mtaani-theme");
+  if (savedTheme === "dark") {
+    document.documentElement.classList.add("dark");
+  }
+
+  themeToggle.addEventListener("click", () => {
+    document.documentElement.classList.toggle("dark");
+    const isDark = document.documentElement.classList.contains("dark");
+    localStorage.setItem("mtaani-theme", isDark ? "dark" : "light");
+  });
+}
+// ==================== END THEME TOGGLE ====================
+
 // Export for debugging
 window.liveSocket = liveSocket;

@@ -18,6 +18,47 @@
   }
 }
 
+/* Light mode (default) */
+:root {
+  --color-onyx: #fffcfc;
+  --color-onyx-mauve: #bcabb0;
+  --color-onyx-deep: #785964;
+  --color-onyx-plum: #5d3543;
+  --color-verdant-clay: #b67e7d;
+  --color-verdant-sage: #5da87a;
+  --color-verdant-forest: #2e6b46;
+  --color-verdant-deep: #17402a;
+  --bg-primary: #fffcfc;
+  --bg-secondary: #ffffff;
+  --text-primary: #1a1a1a;
+  --text-secondary: #785964;
+}
+
+/* Dark mode */
+.dark {
+  --color-onyx: #1a1a1a;
+  --color-onyx-mauve: #2d2d2d;
+  --color-onyx-deep: #a0a0a0;
+  --color-onyx-plum: #c4a0b0;
+  --bg-primary: #121212;
+  --bg-secondary: #1e1e1e;
+  --text-primary: #e0e0e0;
+  --text-secondary: #bcabb0;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.bg-white {
+  background-color: var(--bg-secondary);
+}
+
+.text-onyx-deep {
+  color: var(--text-secondary);
+}
+
 /* Utility classes for all colors */
 .bg-onyx {
   background-color: var(--color-onyx);
