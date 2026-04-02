@@ -27,6 +27,18 @@ defmodule MtaaniWeb.GroupsLive do
   end
 
   @impl true
+  def handle_event("user_online", %{"user_id" => user_id}, socket) do
+    MtaaniWeb.OnlineTracker.add_user(user_id)
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("user_offline", %{"user_id" => user_id}, socket) do
+    MtaaniWeb.OnlineTracker.remove_user(user_id)
+    {:noreply, socket}
+  end
+
+  @impl true
   def render(assigns) do
     ~H"""
     <div class="pb-20">
