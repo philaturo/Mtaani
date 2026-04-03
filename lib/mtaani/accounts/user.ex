@@ -77,7 +77,10 @@ defmodule Mtaani.Accounts.User do
   defp hash_password(changeset) do
     case get_change(changeset, :password) do
       nil -> changeset
-      password -> put_change(changeset, :password_hash, hash_pwd_salt(password))
+      password -> 
+        hash = hash_pwd_salt(password)
+        IO.inspect(hash, label: "GENERATED HASH")
+        put_change(changeset, :password_hash, hash)
     end
   end
 
