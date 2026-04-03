@@ -296,21 +296,22 @@ defmodule MtaaniWeb.AuthLive do
   end
 
   @impl true
-  def handle_event("verify_code", %{"code" => code}, socket) do
-    case Accounts.get_user_by_phone(socket.assigns.phone) do
-      nil ->
-        {:noreply, assign(socket, error: "User not found")}
+def handle_event("verify_code", %{"code" => code}, socket) do
+  case Accounts.get_user_by_phone(socket.assigns.phone) do
+    nil ->
+      {:noreply, assign(socket, error: "User not found")}
 
-      user ->
-        case Accounts.verify_phone(user, code) do
-          {:ok, _user} ->
-            {:noreply, push_navigate(socket, to: "/login?phone=#{URI.encode(user.phone)}")}
+    user ->
+      case Accounts.verify_phone(user, code) do
+        {:ok, user} ->
+          # Redirect to login controller which will set the session
+          {:noreply, push_navigate(socket, to: "/login?phone=#{URI.encode(user.phone)}")}
 
-          {:error, message} ->
-            {:noreply, assign(socket, error: message)}
-        end
-    end
+        {:error, message} ->
+          {:noreply, assign(socket, error: message)}
+      end
   end
+end
 
   @impl true
   def handle_event("resend_code", _, socket) do
