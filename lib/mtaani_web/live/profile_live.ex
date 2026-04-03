@@ -1,67 +1,210 @@
 defmodule MtaaniWeb.ProfileLive do
   use MtaaniWeb, :live_view
+  
+  # ============================================================================
+  # Aliases
+  # ============================================================================
   alias Mtaani.Repo
   alias Mtaani.Accounts.User
   alias Mtaani.Social.Friendship
   alias Mtaani.Social.UserPhoto
 
-  @impl true
-def mount(_params, _session, socket) do
-  # Load current user's profile
-  current_user_id = socket.assigns[:current_user_id] || 1
-  user = Repo.get(User, current_user_id)
-  
-  if user do
-    friends = get_friends(user)
-    photos = get_recent_photos(user)
-    
-    socket =
-      socket
-      |> assign(:active_tab, "profile")
-      |> assign(:user, user)
-      |> assign(:friends, friends)
-      |> assign(:photos, photos)
-      |> assign(:active_section, "profile")
-      |> assign(:show_edit_modal, false)
-      |> assign(:show_photo_modal, false)
+  # ============================================================================
+  # Data Fetching Helpers (Define BEFORE mount functions)
+  # ============================================================================
 
-    {:ok, socket}
-  else
-    {:ok, push_navigate(socket, to: "/")}
+  # TODO: Implement friend fetching after Connections table is populated
+  defp get_friends(_user) do
+    # Will fetch travel buddies from database
+    []
   end
-end
+
+  # TODO: Implement photo fetching after UserPhotos table is populated
+  defp get_recent_photos(_user) do
+    # Will fetch user photos from database
+    []
+  end
+
+  # ============================================================================
+  # Mount Functions
+  # ============================================================================
+
+  @impl true
+  def mount(_params, session, socket) do
+    # Get user_id from session and load user manually
+    user_id = session["user_id"]
+    
+    if user_id do
+      user = Repo.get(User, user_id)
+      
+      if user do
+        friends = get_friends(user)
+        photos = get_recent_photos(user)
+        
+        socket =
+          socket
+          |> assign(:active_tab, "profile")
+          |> assign(:show_emergency, false)
+          |> assign(:user, user)
+          |> assign(:friends, friends)
+          |> assign(:photos, photos)
+          |> assign(:active_section, "profile")
+          |> assign(:show_edit_modal, false)
+          |> assign(:show_photo_modal, false)
+
+        {:ok, socket}
+      else
+        {:ok, push_navigate(socket, to: "/auth")}
+      end
+    else
+      {:ok, push_navigate(socket, to: "/auth")}
+    end
+  end
 
   @impl true
   def mount(%{"username" => username}, _session, socket) do
-    # Load profile by username (or current user if viewing own)
-    user = Repo.get_by(User, username: username) || Repo.get(User, socket.assigns.current_user_id)
-    friends = get_friends(user)
-    photos = get_recent_photos(user)
+    # Load profile by username
+    user = Repo.get_by(User, username: username)
     
-    socket =
-      socket
-      |> assign(:active_tab, "profile")
-      |> assign(:user, user)
-      |> assign(:friends, friends)
-      |> assign(:photos, photos)
-      |> assign(:active_section, "profile") # profile, photos, albums
-      |> assign(:show_edit_modal, false)
-      |> assign(:show_photo_modal, false)
+    if user do
+      friends = get_friends(user)
+      photos = get_recent_photos(user)
+      
+      socket =
+        socket
+        |> assign(:active_tab, "profile")
+        |> assign(:show_emergency, false)
+        |> assign(:user, user)
+        |> assign(:friends, friends)
+        |> assign(:photos, photos)
+        |> assign(:active_section, "profile")
+        |> assign(:show_edit_modal, false)
+        |> assign(:show_photo_modal, false)
 
-    {:ok, socket}
+      {:ok, socket}
+    else
+      {:ok, push_navigate(socket, to: "/")}
+    end
   end
 
-  # TODO: Implement friend fetching after Connections table is populated
-defp get_friends(_user) do
-  # Will fetch travel buddies from database
-  []
-end
+  # ============================================================================
+  # Event Handlers - Profile Management
+  # ============================================================================
 
-# TODO: Implement photo fetching after UserPhotos table is populated
-defp get_recent_photos(_user) do
-  # Will fetch user photos from database
-  []
-end
+  @impl true
+  def handle_event("edit_profile", _, socket) do
+    {:noreply, assign(socket, :show_edit_modal, true)}
+  end
+
+  @impl true
+  def handle_event("close_edit_modal", _, socket) do
+    {:noreply, assign(socket, :show_edit_modal, false)}
+  end
+
+  @impl true
+  def handle_event("save_profile", %{"bio" => bio, "location" => location, "website" => website}, socket) do
+    case Mtaani.Accounts.update_profile(socket.assigns.user, %{bio: bio, location: location, website: website}) do
+      {:ok, user} ->
+        {:noreply, assign(socket, user: user, show_edit_modal: false)}
+      {:error, _} ->
+        {:noreply, assign(socket, error: "Failed to update profile")}
+    end
+  end
+
+  @impl true
+  def handle_event("show_photo_upload", _, socket) do
+    {:noreply, assign(socket, :show_photo_modal, true)}
+  end
+
+  @impl true
+  def handle_event("close_photo_modal", _, socket) do
+    {:noreply, assign(socket, :show_photo_modal, false)}
+  end
+
+  @impl true
+  def handle_event("set_section", %{"section" => section}, socket) do
+    {:noreply, assign(socket, :active_section, section)}
+  end
+
+  @impl true
+  def handle_event("toggle_lock", _, socket) do
+    # Toggle privacy setting
+    new_status = !socket.assigns.user.is_private
+    case Mtaani.Accounts.update_profile(socket.assigns.user, %{is_private: new_status}) do
+      {:ok, user} ->
+        {:noreply, assign(socket, :user, user)}
+      {:error, _} ->
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("view_all_friends", _, socket) do
+    # Navigate to friends page (to be implemented)
+    {:noreply, socket}
+  end
+
+  # ============================================================================
+  # Event Handlers - Navigation
+  # ============================================================================
+
+  @impl true
+  def handle_event("navigate", %{"page" => page}, socket) do
+    {:noreply, push_navigate(socket, to: "/#{page}")}
+  end
+
+  @impl true
+  def handle_event("logout", _, socket) do
+    {:noreply, push_navigate(socket, to: "/logout")}
+  end
+
+  # ============================================================================
+  # Event Handlers - Emergency
+  # ============================================================================
+
+  @impl true
+  def handle_event("open_emergency", _, socket) do
+    {:noreply, assign(socket, :show_emergency, true)}
+  end
+
+  @impl true
+  def handle_event("close_emergency", _, socket) do
+    {:noreply, assign(socket, :show_emergency, false)}
+  end
+
+  @impl true
+  def handle_event("call_police", _, socket) do
+    {:noreply, push_event(socket, "call_number", %{number: "999"})}
+  end
+
+  @impl true
+  def handle_event("call_ambulance", _, socket) do
+    {:noreply, push_event(socket, "call_number", %{number: "911"})}
+  end
+
+  @impl true
+  def handle_event("call_contact", %{"phone" => phone}, socket) do
+    {:noreply, push_event(socket, "call_number", %{number: phone})}
+  end
+
+  @impl true
+  def handle_event("share_location", _, socket) do
+    {:noreply, push_event(socket, "share_location", %{})}
+  end
+
+  @impl true
+  def handle_event("sos_alert", _, socket) do
+    {:noreply, push_event(socket, "sos_alert", %{})}
+  end
+
+  @impl true
+  def handle_event("trigger_emergency", _, socket) do
+    {:noreply, push_event(socket, "trigger_emergency", %{})}
+  end
+
+  # ============================================================================
+  # Render Function
+  # ============================================================================
 
   @impl true
   def render(assigns) do
@@ -198,6 +341,37 @@ end
         </div>
       </div>
     </div>
+
+    <!-- Edit Profile Modal -->
+    <%= if @show_edit_modal do %>
+      <div class="fixed inset-0 bg-onyx-deep/50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+          <h2 class="text-xl font-semibold text-onyx-deep mb-4">Edit Profile</h2>
+          <form phx-submit="save_profile" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-onyx-deep mb-1">Bio</label>
+              <textarea name="bio" rows="3" class="w-full px-4 py-2 border border-onyx-mauve/30 rounded-lg focus:outline-none focus:border-verdant-forest"><%= @user.bio %></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-onyx-deep mb-1">Location</label>
+              <input type="text" name="location" value={@user.location} class="w-full px-4 py-2 border border-onyx-mauve/30 rounded-lg focus:outline-none focus:border-verdant-forest" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-onyx-deep mb-1">Website</label>
+              <input type="url" name="website" value={@user.website} class="w-full px-4 py-2 border border-onyx-mauve/30 rounded-lg focus:outline-none focus:border-verdant-forest" />
+            </div>
+            <div class="flex gap-3 pt-2">
+              <button type="button" phx-click="close_edit_modal" class="flex-1 px-4 py-2 border border-onyx-mauve/20 rounded-lg text-onyx-deep hover:bg-onyx-mauve/5">
+                Cancel
+              </button>
+              <button type="submit" class="flex-1 bg-verdant-forest text-white py-2 rounded-lg hover:bg-verdant-deep">
+                Save
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    <% end %>
 
     <!-- Photo Upload Modal -->
     <%= if @show_photo_modal do %>
