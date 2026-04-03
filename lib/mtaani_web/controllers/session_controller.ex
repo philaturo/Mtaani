@@ -10,12 +10,17 @@ defmodule MtaaniWeb.SessionController do
       %{phone_verified: true} = user ->
         conn
         |> put_session(:user_id, user.id)
-        |> put_flash(:info, "Welcome back, #{user.name}!")
+        |> put_flash(:info, "Welcome to Mtaani, #{user.name}!")
         |> redirect(to: "/")
 
-      _ ->
+      %{phone_verified: false} = _user ->
         conn
-        |> put_flash(:error, "Account not verified")
+        |> put_flash(:error, "Please verify your phone number first")
+        |> redirect(to: "/auth")
+
+      nil ->
+        conn
+        |> put_flash(:error, "Account not found")
         |> redirect(to: "/auth")
     end
   end
@@ -40,9 +45,14 @@ defmodule MtaaniWeb.SessionController do
           |> redirect(to: "/auth")
         end
 
-      _ ->
+      %{phone_verified: false} ->
         conn
-        |> put_flash(:error, "Invalid phone number or account not verified")
+        |> put_flash(:error, "Please verify your phone number first")
+        |> redirect(to: "/auth")
+
+      nil ->
+        conn
+        |> put_flash(:error, "Account not found. Please register first.")
         |> redirect(to: "/auth")
     end
   end
