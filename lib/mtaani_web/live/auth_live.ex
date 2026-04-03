@@ -33,7 +33,9 @@ defmodule MtaaniWeb.AuthLive do
             <h2 class="text-2xl font-semibold text-onyx-deep mb-2">Welcome back</h2>
             <p class="text-onyx-mauve text-sm mb-6">Sign in to continue exploring</p>
             
-            <form phx-submit="login" class="space-y-5">
+            <form action="/login" method="POST" class="space-y-5">
+              <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
+              
               <div>
                 <label class="block text-sm font-medium text-onyx-deep mb-2">Phone Number</label>
                 <div class="relative">
@@ -93,7 +95,7 @@ defmodule MtaaniWeb.AuthLive do
             <p class="text-onyx-mauve text-sm mb-6">Join the Mtaani community</p>
 
             <%= if not @code_sent do %>
-              <form phx-submit="send_code" class="space-y-5">
+              <form phx-submit="send_code" phx-change="validate" class="space-y-5">
                 <div>
                   <label class="block text-sm font-medium text-onyx-deep mb-2">Full name</label>
                   <div class="relative">
@@ -113,6 +115,25 @@ defmodule MtaaniWeb.AuthLive do
                 </div>
                 
                 <div>
+                  <label class="block text-sm font-medium text-onyx-deep mb-2">Username</label>
+                  <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-onyx-mauve">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                      </svg>
+                    </span>
+                    <input
+                      type="text"
+                      name="username"
+                      value={@form["username"]}
+                      class="w-full pl-10 pr-4 py-3 border border-onyx-mauve/30 rounded-xl focus:outline-none focus:border-verdant-forest focus:ring-2 focus:ring-verdant-forest/20 transition-all"
+                      placeholder="username (unique handle)"
+                    />
+                  </div>
+                  <p class="text-xs text-onyx-mauve mt-1">3-20 characters, letters, numbers, or underscore</p>
+                </div>
+                
+                <div>
                   <label class="block text-sm font-medium text-onyx-deep mb-2">Phone number</label>
                   <div class="relative">
                     <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-onyx-mauve">
@@ -123,7 +144,7 @@ defmodule MtaaniWeb.AuthLive do
                     <input
                       type="tel"
                       name="phone"
-                      value={@form["name"]}
+                      value={@form["phone"]}
                       class="w-full pl-10 pr-4 py-3 border border-onyx-mauve/30 rounded-xl focus:outline-none focus:border-verdant-forest focus:ring-2 focus:ring-verdant-forest/20 transition-all"
                       placeholder="07XXXXXXXX"
                     />
@@ -141,11 +162,25 @@ defmodule MtaaniWeb.AuthLive do
                     <input
                       type="password"
                       name="password"
-                      value={@form["name"]}
                       class="w-full pl-10 pr-4 py-3 border border-onyx-mauve/30 rounded-xl focus:outline-none focus:border-verdant-forest focus:ring-2 focus:ring-verdant-forest/20 transition-all"
                       placeholder="Create a password"
                     />
                   </div>
+                </div>
+                
+                <!-- Profile Photo Upload -->
+                <div class="border-2 border-dashed border-onyx-mauve/30 rounded-xl p-4 text-center">
+                  <label class="cursor-pointer block">
+                    <div class="w-20 h-20 mx-auto rounded-full bg-verdant-forest/10 flex items-center justify-center overflow-hidden" id="profile-preview">
+                      <svg class="w-10 h-10 text-verdant-forest" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+                      </svg>
+                    </div>
+                    <span class="text-sm text-verdant-forest mt-2 inline-block">Add profile photo</span>
+                    <input type="file" id="profile-photo" accept="image/*" class="hidden" />
+                  </label>
+                  <p class="text-xs text-onyx-mauve mt-1">Optional. You can add later.</p>
                 </div>
                 
                 <%= if @error do %>
@@ -230,32 +265,35 @@ defmodule MtaaniWeb.AuthLive do
   end
 
   @impl true
-  def handle_event("send_code", %{"name" => name, "phone" => phone, "password" => password}, socket) do
-    case Accounts.create_user(%{name: name, phone: phone, password: password}) do
-      {:ok, user} ->
-        Accounts.send_verification_code(user.phone, user.verification_code)
-        {:noreply,
-         assign(socket,
-           page: "register",
-           phone: phone,
-           code_sent: true,
-           error: nil,
-           success: "Verification code sent to #{phone}"
-         )}
-
-      {:error, message} when is_binary(message) ->
-        {:noreply, assign(socket, error: message)}
-
-      {:error, changeset} ->
-        error_msg = changeset.errors |> Enum.map(fn {field, {msg, _}} -> "#{field}: #{msg}" end) |> Enum.join(", ")
-        {:noreply, assign(socket, error: error_msg)}
-    end
+  def handle_event("validate", %{"name" => name, "username" => username, "phone" => phone, "password" => password}, socket) do
+    {:noreply, assign(socket, form: %{"name" => name, "username" => username, "phone" => phone, "password" => password})}
   end
 
- @impl true
-def handle_event("validate", %{"name" => name, "phone" => phone, "password" => password}, socket) do
-  {:noreply, assign(socket, form: %{"name" => name, "phone" => phone, "password" => password})}
-end
+  @impl true
+  def handle_event("send_code", %{"name" => name, "username" => username, "phone" => phone, "password" => password}, socket) do
+    case Accounts.get_user_by_username(username) do
+      nil ->
+        case Accounts.create_user(%{name: name, username: username, phone: phone, password: password}) do
+          {:ok, user} ->
+            Accounts.send_verification_code(user.phone, user.verification_code)
+            {:noreply,
+             assign(socket,
+               page: "register",
+               phone: phone,
+               code_sent: true,
+               error: nil,
+               success: "Verification code sent to #{phone}"
+             )}
+
+          {:error, changeset} ->
+            error_msg = changeset.errors |> Enum.map(fn {field, {msg, _}} -> "#{field}: #{msg}" end) |> Enum.join(", ")
+            {:noreply, assign(socket, error: error_msg)}
+        end
+
+      _ ->
+        {:noreply, assign(socket, error: "Username already taken. Please choose another.")}
+    end
+  end
 
   @impl true
   def handle_event("verify_code", %{"code" => code}, socket) do
@@ -291,11 +329,6 @@ end
 
         {:noreply, assign(socket, success: "New code sent to #{socket.assigns.phone}")}
     end
-  end
-
-  @impl true
-  def handle_event("login", %{"phone" => phone, "password" => password}, socket) do
-    {:noreply, push_navigate(socket, to: "/login?phone=#{URI.encode(phone)}&password=#{URI.encode(password)}")}
   end
 
   # ==================== ONLINE TRACKER HANDLERS ====================
