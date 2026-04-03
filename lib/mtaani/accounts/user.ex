@@ -30,13 +30,19 @@ defmodule Mtaani.Accounts.User do
 
   def registration_changeset(user, attrs) do
     user
-    |> cast(attrs, [:name, :email, :phone, :password])
-    |> validate_required([:name, :phone, :password])
+    |> cast(attrs, [:name, :username, :email, :phone, :password])
+    |> validate_required([:name, :username, :phone, :password])
+    |> validate_username()
     |> validate_phone()
     |> unique_constraint(:phone)
+    |> unique_constraint(:username)
     |> put_verification_code()
     |> hash_password()
-    |> maybe_generate_username()
+  end
+
+  def verification_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:phone_verified, :verification_code])
   end
 
   def profile_changeset(user, attrs) do
@@ -49,19 +55,13 @@ defmodule Mtaani.Accounts.User do
       "profile" -> change(user, %{profile_photo_url: photo_url})
       "cover" -> change(user, %{cover_photo_url: photo_url})
     end
-    Repo.update(changeset)
+    Mtaani.Repo.update(changeset)
   end
 
-  defp maybe_generate_username(changeset) do
-    case get_change(changeset, :name) do
-      nil -> changeset
-      name -> 
-        username = name
-        |> String.downcase()
-        |> String.replace(~r/[^a-z0-9]/, ".")
-        |> then(&(&1 <> ".#{:rand.uniform(1000)}"))
-        put_change(changeset, :username, username)
-    end
+  defp validate_username(changeset) do
+    changeset
+    |> validate_format(:username, ~r/^[a-zA-Z0-9_]{3,20}$/, 
+        message: "must be 3-20 characters, letters, numbers, or underscore")
   end
 
   defp validate_phone(changeset) do
