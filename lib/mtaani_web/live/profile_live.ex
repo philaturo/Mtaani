@@ -2,8 +2,8 @@ defmodule MtaaniWeb.ProfileLive do
   use MtaaniWeb, :live_view
   alias Mtaani.Repo
   alias Mtaani.Accounts.User
-  alias Mtaani.Social.Friendship
-  alias Mtaani.Social.UserPhoto
+ # alias Mtaani.Social.Friendship
+ # alias Mtaani.Social.UserPhoto
 
   @impl true
   def mount(%{"username" => username}, _session, socket) do
@@ -25,16 +25,17 @@ defmodule MtaaniWeb.ProfileLive do
     {:ok, socket}
   end
 
-  # Add these placeholder functions
-  defp get_friends(user) do
-    # TODO: Implement friend fetching
-    []
-  end
+  # TODO: Implement friend fetching after Connections table is populated
+defp get_friends(_user) do
+  # Will fetch travel buddies from database
+  []
+end
 
-  defp get_recent_photos(user) do
-    # TODO: Implement photo fetching
-    []
-  end
+# TODO: Implement photo fetching after UserPhotos table is populated
+defp get_recent_photos(_user) do
+  # Will fetch user photos from database
+  []
+end
 
   @impl true
   def render(assigns) do
