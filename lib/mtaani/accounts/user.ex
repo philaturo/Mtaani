@@ -12,11 +12,18 @@ defmodule Mtaani.Accounts.User do
     field :phone_verified, :boolean, default: false
     field :verification_code, :string
     field :preferences, :map, default: %{}
-    field :impact_stats, :map, default: %{
-      "local_businesses_supported" => 0,
-      "community_revenue" => 0,
-      "carbon_saved_kg" => 0
-    }
+    
+    # Profile fields
+    field :bio, :string
+    field :cover_photo_url, :string
+    field :profile_photo_url, :string
+    field :is_private, :boolean, default: false
+    field :location, :string
+    field :website, :string
+    field :friends_count, :integer, default: 0
+    field :followers_count, :integer, default: 0
+    field :following_count, :integer, default: 0
+    field :username, :string
 
     timestamps()
   end
@@ -29,11 +36,32 @@ defmodule Mtaani.Accounts.User do
     |> unique_constraint(:phone)
     |> put_verification_code()
     |> hash_password()
+    |> maybe_generate_username()
   end
 
-  def verification_changeset(user, attrs) do
+  def profile_changeset(user, attrs) do
     user
-    |> cast(attrs, [:phone_verified, :verification_code])
+    |> cast(attrs, [:bio, :location, :website, :is_private])
+  end
+
+  def update_photo(user, photo_url, type) do
+    changeset = case type do
+      "profile" -> change(user, %{profile_photo_url: photo_url})
+      "cover" -> change(user, %{cover_photo_url: photo_url})
+    end
+    Repo.update(changeset)
+  end
+
+  defp maybe_generate_username(changeset) do
+    case get_change(changeset, :name) do
+      nil -> changeset
+      name -> 
+        username = name
+        |> String.downcase()
+        |> String.replace(~r/[^a-z0-9]/, ".")
+        |> then(&(&1 <> ".#{:rand.uniform(1000)}"))
+        put_change(changeset, :username, username)
+    end
   end
 
   defp validate_phone(changeset) do
