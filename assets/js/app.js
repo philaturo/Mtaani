@@ -192,5 +192,24 @@ window.addEventListener("phx:trigger_emergency", (e) => {
   }
 });
 
+// ==================== PROFILE PHOTO PREVIEW ====================
+// Profile photo preview and upload
+const photoInput = document.getElementById("profile-photo");
+const previewDiv = document.getElementById("profile-preview");
+
+if (photoInput && previewDiv) {
+  photoInput.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        previewDiv.innerHTML = `<img src="${event.target.result}" class="w-full h-full object-cover" />`;
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+}
+// ==================== END PROFILE PHOTO PREVIEW ====================
+
 // Export for debugging
 window.liveSocket = liveSocket;
