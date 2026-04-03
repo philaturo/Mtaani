@@ -10,14 +10,30 @@ defmodule Mtaani.Accounts do
   alias Mtaani.Social.UserAlbum
   import Ecto.Query
 
+  # ============ PHONE FORMATTING ============
+
   defp format_phone(nil), do: nil
-  defp format_phone(phone) do
-    if is_binary(phone) and String.length(phone) == 10 and String.starts_with?(phone, "07") do
-      "+254" <> String.slice(phone, 1, 9)
-    else
-      nil
+  defp format_phone(phone) when is_binary(phone) do
+    # Remove all non-digit characters
+    digits = String.replace(phone, ~r/\D/, "")
+    
+    cond do
+      # Already in +254 format with digits
+      String.starts_with?(digits, "254") and String.length(digits) == 12 ->
+        "+" <> digits
+      # Kenyan format: 07XXXXXXXX
+      String.starts_with?(digits, "07") and String.length(digits) == 10 ->
+        "+254" <> String.slice(digits, 1, 9)
+      # Missing leading zero: 7XXXXXXXX
+      String.starts_with?(digits, "7") and String.length(digits) == 9 ->
+        "+254" <> digits
+      true ->
+        nil
     end
   end
+  defp format_phone(_), do: nil
+
+  # ============ USER LOOKUP ============
 
   @doc """
   Get a user by phone number.
@@ -26,16 +42,14 @@ defmodule Mtaani.Accounts do
     if is_nil(phone) do
       nil
     else
-      Repo.get_by(User, phone: format_phone(phone))
+      formatted = format_phone(phone)
+      if formatted do
+        Repo.get_by(User, phone: formatted)
+      else
+        nil
+      end
     end
   end
-
-  @doc """
-Get a user by username.
-"""
-def get_user_by_username(username) do
-  Repo.get_by(User, username: username)
-end
 
   @doc """
   Get a user by ID.
@@ -45,11 +59,13 @@ end
   end
 
   @doc """
-  Get user by username.
+  Get a user by username.
   """
   def get_user_by_username(username) do
     Repo.get_by(User, username: username)
   end
+
+  # ============ USER CREATION ============
 
   @doc """
   Create a new user with phone verification.
@@ -60,11 +76,7 @@ end
     
     raw_phone = attrs["phone"]
     
-    phone = if is_binary(raw_phone) and String.length(raw_phone) == 10 and String.starts_with?(raw_phone, "07") do
-      "+254" <> String.slice(raw_phone, 1, 9)
-    else
-      nil
-    end
+    phone = format_phone(raw_phone)
     
     if is_nil(phone) do
       {:error, "Phone number is required. Please use format: 07XXXXXXXX"}
@@ -75,6 +87,8 @@ end
       |> Repo.insert()
     end
   end
+
+  # ============ PROFILE MANAGEMENT ============
 
   @doc """
   Update user profile.
@@ -91,6 +105,8 @@ end
   def update_user_photo(user, photo_url, type) do
     User.update_photo(user, photo_url, type)
   end
+
+  # ============ VERIFICATION ============
 
   @doc """
   Generate a 6-digit verification code.
@@ -122,7 +138,7 @@ end
     end
   end
 
-  # ============ TRAVEL BUDDIES (Social Connections) ============
+  # ============ TRAVEL BUDDIES ============
 
   @doc """
   Get user's travel buddies (accepted connections).
