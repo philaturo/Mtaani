@@ -2,8 +2,34 @@ defmodule MtaaniWeb.ProfileLive do
   use MtaaniWeb, :live_view
   alias Mtaani.Repo
   alias Mtaani.Accounts.User
- # alias Mtaani.Social.Friendship
- # alias Mtaani.Social.UserPhoto
+  alias Mtaani.Social.Friendship
+  alias Mtaani.Social.UserPhoto
+
+  @impl true
+def mount(_params, _session, socket) do
+  # Load current user's profile
+  current_user_id = socket.assigns[:current_user_id] || 1
+  user = Repo.get(User, current_user_id)
+  
+  if user do
+    friends = get_friends(user)
+    photos = get_recent_photos(user)
+    
+    socket =
+      socket
+      |> assign(:active_tab, "profile")
+      |> assign(:user, user)
+      |> assign(:friends, friends)
+      |> assign(:photos, photos)
+      |> assign(:active_section, "profile")
+      |> assign(:show_edit_modal, false)
+      |> assign(:show_photo_modal, false)
+
+    {:ok, socket}
+  else
+    {:ok, push_navigate(socket, to: "/")}
+  end
+end
 
   @impl true
   def mount(%{"username" => username}, _session, socket) do
