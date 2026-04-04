@@ -90,70 +90,89 @@ end
     }
   end
 
-  defp get_safety_zone(lat, lng) do
-    # Use fragment for PostGIS ST_Contains function
-    query = from sz in SafetyZone,
-      where: fragment("ST_Contains(?, ST_SetSRID(ST_MakePoint(?, ?), 4326))", sz.area, ^lng, ^lat),
-      select: %{name: sz.name, safety_level: sz.safety_level}
-    
-    case Repo.one(query) do
-      nil -> %{name: "Unknown area", safety_level: 2}
-      zone -> zone
-    end
-  end
+ # This queries REAL database data - no placeholders -> to be implement later
+# defp get_safety_zone(lat, lng) do
+  # query = from sz in SafetyZone,
+    # where: fragment("ST_Contains(?, ST_SetSRID(ST_MakePoint(?, ?), 4326))", sz.area, ^lng, ^lat),
+    # select: %{name: sz.name, incident_count: sz.incident_count}
+  
+  # Repo.one(query)  # Return REAL data from DB
+# end
 
-  defp get_nearby_incidents(lat, lng, radius_m) do
+  
+ # defp get_nearby_incidents(lat, lng, radius_m) do
     # Use fragment for PostGIS ST_DWithin function
-    query = from i in Incident,
-      where: fragment("ST_DWithin(?, ST_SetSRID(ST_MakePoint(?, ?), 4326), ?)", i.location, ^lng, ^lat, ^radius_m) and i.resolved == false,
-      select: %{type: i.type, severity: i.severity, description: i.description},
-      limit: 5
+  #  query = from i in Incident,
+   #   where: fragment("ST_DWithin(?, ST_SetSRID(ST_MakePoint(?, ?), 4326), ?)", i.location, ^lng, ^lat, ^radius_m) and i.resolved == false,
+    #  select: %{type: i.type, severity: i.severity, description: i.description},
+     # limit: 5
     
-    Repo.all(query)
-  end
+   # Repo.all(query)
+  #end
 
-  defp get_nearby_places(lat, lng, radius_m) do
-    # Use fragment for PostGIS ST_DWithin function
-    query = from p in Place,
-      where: fragment("ST_DWithin(?, ST_SetSRID(ST_MakePoint(?, ?), 4326), ?)", p.location, ^lng, ^lat, ^radius_m),
-      select: %{name: p.name, category: p.category, safety_score: p.safety_score},
-      limit: 10
+ # defp get_nearby_places(lat, lng, radius_m) do
+  #  # Use fragment for PostGIS ST_DWithin function
+   # query = from p in Place,
+    #  where: fragment("ST_DWithin(?, ST_SetSRID(ST_MakePoint(?, ?), 4326), ?)", p.location, ^lng, ^lat, ^radius_m),
+     # select: %{name: p.name, category: p.category, safety_score: p.safety_score},
+      #limit: 10
     
-    Repo.all(query)
-  end
+   # Repo.all(query)
+  #end
+
+  # Simple fall backs to replace PostGIS functionality for now
+    defp get_safety_zone(lat, lng) do
+  %{name: "Nairobi Area", incident_count: 0}
+end
+
+defp get_nearby_incidents(lat, lng, radius_m) do
+  []
+end
+
+defp get_nearby_places(lat, lng, radius_m) do
+  []
+end
 
   defp build_prompt(user_message, user_context, location_context) do
-  context_parts = []
-
-  # Add user context
-  context_parts = ["User: #{user_context.name}" | context_parts]
+  # Build context parts using explicit list accumulation
+  initial_items = []
   
-  if user_context.preferences != %{} do
-    context_parts = ["Preferences: #{inspect(user_context.preferences)}" | context_parts]
+  # Add user context
+  after_user = ["User: #{user_context.name}" | initial_items]
+  
+  after_prefs = if user_context.preferences != %{} do
+    ["Preferences: #{inspect(user_context.preferences)}" | after_user]
+  else
+    after_user
   end
 
   # Add location context if available
-  if location_context.has_location do
+  final_items = if location_context.has_location do
     location_text = """
     Current location: #{location_context.safety_zone.name}
-    Safety level: #{safety_level_to_text(location_context.safety_zone.safety_level)}
+    Incident count in area: #{location_context.safety_zone.incident_count}
     """
-    context_parts = [location_text | context_parts]
+    after_location = [location_text | after_prefs]
     
-    if length(location_context.incidents) > 0 do
-      incidents_text = "Recent incidents nearby: " <> Enum.map_join(location_context.incidents, ", ", &(&1.type))
-      context_parts = [incidents_text | context_parts]
+    after_incidents = cond do
+      length(location_context.incidents) > 0 ->
+        incidents_text = "Recent incidents nearby: " <> Enum.map_join(location_context.incidents, ", ", &(&1.type))
+        [incidents_text | after_location]
+      
+      length(location_context.nearby_places) > 0 ->
+        places_text = "Nearby places: " <> Enum.map_join(location_context.nearby_places, ", ", &("#{&1.name} (#{&1.category})"))
+        [places_text | after_location]
+      
+      true ->
+        ["\n[SYSTEM NOTE: The Mtaani database is currently being populated with real-time data for Nairobi. You don't have specific place/incident data for this exact location yet. Be honest about this limitation.]" | after_location]
     end
     
-    if length(location_context.nearby_places) > 0 do
-      places_text = "Nearby places: " <> Enum.map_join(location_context.nearby_places, ", ", &("#{&1.name} (#{&1.category})"))
-      context_parts = [places_text | context_parts]
-    end
+    after_incidents
   else
-    context_parts = ["Location: Not shared. User hasn't enabled location services." | context_parts]
+    ["Location: Not shared. User hasn't enabled location services." | after_prefs]
   end
 
-  context = Enum.join(Enum.reverse(context_parts), "\n")
+  context = Enum.join(Enum.reverse(final_items), "\n")
 
   """
   #{@system_prompt}
@@ -163,14 +182,13 @@ end
   
   User message: #{user_message}
   
+  Important: If the database lacks specific data for this query, be honest and say:
+  "I don't have specific data for that yet. Mtaani is currently expanding its coverage of Nairobi. 
+  Could you try a different area or ask me about general information about Nairobi?"
+  
   Respond as Mtaani AI. Be helpful, concise, and honest about any missing data.
   """
 end
-
-  defp safety_level_to_text(1), do: "Calm - good for walking"
-  defp safety_level_to_text(2), do: "Bustling - normal urban caution advised"
-  defp safety_level_to_text(3), do: "Caution advised - stay aware of surroundings"
-  defp safety_level_to_text(_), do: "Unknown"
 
   defp call_groq(prompt) do
     api_key = Application.get_env(:mtaani, :groq_api_key) || System.get_env("GROQ_API_KEY")
@@ -201,7 +219,7 @@ end
     ]
     
     body = %{
-      model: "llama3-8b-8192",
+     model: "llama-3.1-8b-instant",
       messages: [
         %{role: "system", content: @system_prompt},
         %{role: "user", content: prompt}
@@ -244,4 +262,26 @@ end
         "I'm here to help! You can ask me about local restaurants, safety information, directions, transport options, or upcoming events. What would you like to know about Nairobi? (Note: This is a simulated response. Real AI responses will be available when the Groq API key is configured.)"
     end
   end
+
+  # ==================== HELPER FUNCTIONS ====================
+  
+  @doc """
+  Check what data is available in the database
+  Add this function before the final 'end' of the module
+  """
+  def check_data_status do
+    places_count = Repo.aggregate(Place, :count, :id)
+    zones_count = Repo.aggregate(SafetyZone, :count, :id)
+    incidents_count = Repo.aggregate(Incident, :count, :id)
+    
+    %{
+      has_places: places_count > 0,
+      has_safety_zones: zones_count > 0,
+      has_incidents: incidents_count > 0,
+      places_count: places_count,
+      safety_zones_count: zones_count,
+      incidents_count: incidents_count
+    }
+  end
+  
 end
