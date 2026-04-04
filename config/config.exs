@@ -25,6 +25,15 @@ config :mtaani,
   ecto_repos: [Mtaani.Repo],
   generators: [timestamp_type: :utc_datetime]
 
+# Geo configuration (ADD THIS BLOCK)
+# config :geo,
+  # json_library: Jason,
+ # postgis_extension: true
+
+# Ecto Repo with PostGIS types
+# config :mtaani, Mtaani.Repo,
+ # types: Geo.PostGIS.Type
+
 # Configure the endpoint
 config :mtaani, MtaaniWeb.Endpoint,
   url: [host: "localhost"],
