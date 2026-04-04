@@ -2,31 +2,50 @@ defmodule MtaaniWeb.HomeLive do
   use MtaaniWeb, :live_view
   
   alias Mtaani.AI
+  alias Mtaani.Social.Post
+  alias Mtaani.Accounts.User
+  import Ecto.Query
 
   @impl true
   def mount(_params, session, socket) do
-    user = %{name: "Explorer"}
     current_user_id = session["user_id"] || 1
+    current_user = Mtaani.Repo.get(User, current_user_id)
+    
+    # Load real feed posts
+    posts = load_feed_posts()
     
     socket =
       socket
       |> assign(:active_tab, "home")
       |> assign(:show_emergency, false)
       |> assign(:current_user_id, current_user_id)
-      |> assign(:user, user)
+      |> assign(:current_user, current_user || %{name: "Explorer"})
+      |> assign(:posts, posts)
       |> assign(:messages, [])
       |> assign(:input_text, "")
       |> assign(:thinking, false)
       |> assign(:user_location, nil)
-      |> assign(:current_vibe, :unknown)
-      
+      |> assign(:new_post_content, "")
+      |> assign(:show_new_post_modal, false)
+      |> assign(:stories, [])
 
     if connected?(socket) do
+      Phoenix.PubSub.subscribe(Mtaani.PubSub, "feed_updates")
       Phoenix.PubSub.subscribe(Mtaani.PubSub, "online_count")
       send(self(), :request_location)
     end
 
     {:ok, socket}
+  end
+
+  # Load real posts from database
+  defp load_feed_posts do
+    query = from post in Post,
+      order_by: [desc: post.inserted_at],
+      limit: 20,
+      preload: [:user]
+    
+    Mtaani.Repo.all(query)
   end
 
   @impl true
@@ -39,6 +58,13 @@ defmodule MtaaniWeb.HomeLive do
     {:noreply, push_event(socket, "online_count_update", %{count: count})}
   end
 
+  # Real-time feed updates
+  @impl true
+  def handle_info({:new_post, post}, socket) do
+    posts = [post | socket.assigns.posts]
+    {:noreply, assign(socket, :posts, posts)}
+  end
+
   # AI Response Handler
   @impl true
   def handle_info({:ai_response, user_message}, socket) do
@@ -46,28 +72,94 @@ defmodule MtaaniWeb.HomeLive do
     location = socket.assigns.user_location
     
     case AI.chat(user_message, user_id, location) do
-      {:ok, response} ->
-        messages = socket.assigns.messages ++ [%{role: :assistant, content: response, timestamp: DateTime.utc_now()}]
-        {:noreply, assign(socket, [messages: messages, thinking: false])}
+  {:ok, response} ->
+    messages = socket.assigns.messages ++ [%{role: :assistant, content: response, timestamp: DateTime.utc_now()}]
+    {:noreply, assign(socket, [messages: messages, thinking: false])}
+  end
+ end
+
+  # Load more posts for infinite scroll
+  @impl true
+  def handle_event("load_more", %{"page" => page}, socket) do
+    page_num = String.to_integer(page)
+    offset = (page_num - 1) * 10
+    
+    query = from post in Post,
+      order_by: [desc: post.inserted_at],
+      limit: 10,
+      offset: ^offset,
+      preload: [:user]
+    
+    new_posts = Mtaani.Repo.all(query)
+    all_posts = socket.assigns.posts ++ new_posts
+    has_more = length(new_posts) == 10
+    
+    {:reply, %{has_more: has_more}, assign(socket, :posts, all_posts)}
+  end
+
+  # Feed interactions
+  @impl true
+  def handle_event("like_post", %{"post_id" => _post_id}, socket) do
+    # TODO: Implement like functionality
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("show_new_post_modal", _, socket) do
+    {:noreply, assign(socket, :show_new_post_modal, true)}
+  end
+
+  @impl true
+  def handle_event("close_new_post_modal", _, socket) do
+    {:noreply, assign(socket, [show_new_post_modal: false, new_post_content: ""])}
+  end
+
+  @impl true
+  def handle_event("update_new_post", %{"content" => content}, socket) do
+    {:noreply, assign(socket, :new_post_content, content)}
+  end
+
+  @impl true
+  def handle_event("create_post", _, socket) do
+    content = socket.assigns.new_post_content
+    
+    if String.trim(content) != "" do
+      attrs = %{
+        content: content,
+        user_id: socket.assigns.current_user_id
+      }
       
-      {:error, error_msg} ->
-        messages = socket.assigns.messages ++ [%{role: :assistant, content: error_msg, timestamp: DateTime.utc_now()}]
-        {:noreply, assign(socket, [messages: messages, thinking: false])}
+      case Mtaani.Social.create_post(attrs) do
+        {:ok, post} ->
+          Phoenix.PubSub.broadcast(Mtaani.PubSub, "feed_updates", {:new_post, post})
+          {:noreply, assign(socket, [show_new_post_modal: false, new_post_content: ""])}
+        {:error, _changeset} ->
+          {:noreply, socket}
+      end
+    else
+      {:noreply, socket}
     end
   end
 
-  # ==================== ALL handle_event/3 FUNCTIONS ====================
+  # Quick action buttons (for AI)
+  @impl true
+  def handle_event("quick_action", %{"message" => message}, socket) do
+    messages = socket.assigns.messages ++ [%{role: :user, content: message, timestamp: DateTime.utc_now()}]
+    socket = assign(socket, [messages: messages, thinking: true])
+    send(self(), {:ai_response, message})
+    {:noreply, socket}
+  end
+
+  # Navigation
   @impl true
   def handle_event("navigate", %{"page" => page}, socket) do
     {:noreply, push_navigate(socket, to: "/#{page}")}
   end
 
+  # Location handlers
   @impl true
   def handle_event("location-update", %{"lat" => lat, "lng" => lng}, socket) do
-    {:noreply,
-     socket
-     |> assign(:user_location, %{lat: lat, lng: lng})
-     |> assign(:current_vibe, :calm)}
+    {:noreply, assign(socket, :user_location, %{lat: lat, lng: lng})}
   end
 
   @impl true
@@ -81,6 +173,7 @@ defmodule MtaaniWeb.HomeLive do
     {:noreply, assign(socket, :user_location, %{lat: lat, lng: lng})}
   end
 
+  # AI Chat handlers
   @impl true
   def handle_event("update-input", %{"message" => message}, socket) do
     {:noreply, assign(socket, :input_text, message)}
@@ -97,6 +190,13 @@ defmodule MtaaniWeb.HomeLive do
   @impl true
   def handle_event("send-message", _, socket), do: {:noreply, socket}
 
+  # Toggle chat (JS handles the UI)
+  @impl true
+  def handle_event("toggle_chat", _, socket) do
+    {:noreply, socket}
+  end
+
+  # Online tracking
   @impl true
   def handle_event("user_online", %{"user_id" => user_id}, socket) do
     MtaaniWeb.OnlineTracker.add_user(user_id)
@@ -150,154 +250,163 @@ defmodule MtaaniWeb.HomeLive do
     {:noreply, push_event(socket, "trigger_emergency", %{})}
   end
 
-  # Logout Handler
   @impl true
   def handle_event("logout", _, socket) do
     {:noreply, push_navigate(socket, to: "/logout")}
   end
 
-  # ==================== END handle_event/3 FUNCTIONS ====================
-
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="h-full flex flex-col max-w-3xl mx-auto px-4 py-6 pb-20">
-      <!-- Welcome Header -->
-      <div class="mb-8">
-        <h1 class="text-2xl font-semibold text-onyx-deep">Welcome back, <%= @user.name %></h1>
-        <p class="text-onyx-mauve mt-1">Your intelligent guide to Nairobi</p>
+    <div class="h-full flex flex-col bg-gradient-to-b from-onyx/5 to-white">
+      <!-- Stories Bar -->
+      <div class="stories-container overflow-x-auto px-4 py-3 border-b border-onyx-mauve/10">
+        <div class="flex gap-3">
+          <!-- Add Story Button -->
+          <div class="flex-shrink-0 text-center cursor-pointer">
+            <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-verdant-sage to-verdant-forest p-0.5">
+              <div class="w-full h-full rounded-full bg-white flex items-center justify-center">
+                <svg class="w-6 h-6 text-verdant-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+              </div>
+            </div>
+            <p class="text-xs text-onyx-deep mt-1">Your Story</p>
+          </div>
+        </div>
       </div>
 
-      <!-- Feature Cards Grid -->
-      <div class="grid grid-cols-2 gap-4 mb-8">
-        <button phx-click="send-message" phx-value-message="Find local food near me" 
-          class="group bg-white rounded-xl border border-onyx-mauve/20 p-4 text-left hover:border-verdant-forest hover:shadow-md transition-all duration-200">
-          <div class="w-10 h-10 rounded-lg bg-verdant-forest/10 flex items-center justify-center mb-3 group-hover:bg-verdant-forest/20 transition-colors">
-            <svg class="w-5 h-5 text-verdant-forest" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8.25v-1.5m0 1.5c-1.355 0-2.697.056-4.024.166C6.845 8.51 6 9.473 6 10.608v2.513m6-4.87c1.355 0 2.697.055 4.024.165C17.155 8.51 18 9.473 18 10.608v2.513m-3-4.87v-1.5m-6 1.5v-1.5m12 9.75l-4.5 4.5-3-3-3 3-4.5-4.5" />
-            </svg>
+      <!-- Main Feed with Infinite Scroll -->
+      <div id="feed-scroll" phx-hook="InfiniteScroll" class="flex-1 overflow-y-auto custom-scrollbar">
+        <!-- Create Post Box -->
+        <div class="bg-white rounded-xl shadow-sm p-4 m-4 border border-onyx-mauve/10">
+          <div class="flex gap-3">
+            <div class="w-10 h-10 rounded-full bg-verdant-forest/20 flex items-center justify-center">
+              <span class="text-verdant-forest font-semibold"><%= String.slice(@current_user.name, 0..0) %></span>
+            </div>
+            <button phx-click="show_new_post_modal" class="flex-1 text-left px-4 py-2 rounded-full bg-gray-100 text-onyx-mauve hover:bg-gray-200 transition-colors">
+              What's on your mind, <%= @current_user.name %>?
+            </button>
           </div>
-          <h3 class="font-medium text-onyx-deep">Local Food</h3>
-          <p class="text-xs text-onyx-mauve mt-1">Authentic Kenyan cuisine nearby</p>
-        </button>
-
-        <button phx-click="send-message" phx-value-message="Is the area around me calm right now?" 
-          class="group bg-white rounded-xl border border-onyx-mauve/20 p-4 text-left hover:border-verdant-forest hover:shadow-md transition-all duration-200">
-          <div class="w-10 h-10 rounded-lg bg-verdant-forest/10 flex items-center justify-center mb-3 group-hover:bg-verdant-forest/20 transition-colors">
-            <svg class="w-5 h-5 text-verdant-forest" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-            </svg>
+          <div class="flex justify-around mt-3 pt-3 border-t border-gray-100">
+            <button class="flex items-center gap-2 text-sm text-onyx-mauve hover:text-verdant-forest transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span>Photo</span>
+            </button>
+            <button class="flex items-center gap-2 text-sm text-onyx-mauve hover:text-verdant-forest transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Feeling</span>
+            </button>
           </div>
-          <h3 class="font-medium text-onyx-deep">Safety Check</h3>
-          <p class="text-xs text-onyx-mauve mt-1">Real-time area safety status</p>
-        </button>
-
-        <button phx-click="send-message" phx-value-message="Best way to get to Jomo Kenyatta Airport" 
-          class="group bg-white rounded-xl border border-onyx-mauve/20 p-4 text-left hover:border-verdant-forest hover:shadow-md transition-all duration-200">
-          <div class="w-10 h-10 rounded-lg bg-verdant-forest/10 flex items-center justify-center mb-3 group-hover:bg-verdant-forest/20 transition-colors">
-            <svg class="w-5 h-5 text-verdant-forest" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.22-1.113-.615-1.53a15.12 15.12 0 00-2.207-1.625M13.5 5.25L12 3.75 9 6.75" />
-            </svg>
-          </div>
-          <h3 class="font-medium text-onyx-deep">Directions</h3>
-          <p class="text-xs text-onyx-mauve mt-1">Get there with verified transport</p>
-        </button>
-
-        <button phx-click="send-message" phx-value-message="Any events or cultural activities happening today?" 
-          class="group bg-white rounded-xl border border-onyx-mauve/20 p-4 text-left hover:border-verdant-forest hover:shadow-md transition-all duration-200">
-          <div class="w-10 h-10 rounded-lg bg-verdant-forest/10 flex items-center justify-center mb-3 group-hover:bg-verdant-forest/20 transition-colors">
-            <svg class="w-5 h-5 text-verdant-forest" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-            </svg>
-          </div>
-          <h3 class="font-medium text-onyx-deep">Events</h3>
-          <p class="text-xs text-onyx-mauve mt-1">Live music, markets, festivals</p>
-        </button>
-      </div>
-
-      <!-- AI Chat Section -->
-      <div class="flex-1">
-        <div :if={@messages == []} class="flex flex-col items-center text-center py-8">
-          <div class="w-16 h-16 rounded-full bg-verdant-forest/10 flex items-center justify-center mb-4">
-            <svg class="w-8 h-8 text-verdant-forest" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M3 9.75a9 9 0 1118 0 9 9 0 01-18 0z" />
-            </svg>
-          </div>
-          <h2 class="text-lg font-medium text-onyx-deep">Ask Mtaani AI</h2>
-          <p class="text-sm text-onyx-mauve mt-1 max-w-xs">Get personalized recommendations, safety updates, and local insights</p>
         </div>
 
-        <div :if={@messages != []} class="space-y-4 pb-4 custom-scrollbar">
-          <%= for message <- @messages do %>
-            <div class={[
-              "flex message-fade-in",
-              message.role == :user && "justify-end",
-              message.role == :assistant && "justify-start"
-            ]}>
-              <div class={[
-                "max-w-[85%] rounded-2xl px-4 py-3",
-                message.role == :user && "bg-verdant-forest text-white",
-                message.role == :assistant && "bg-onyx-mauve/10 text-onyx-deep"
-              ]}>
-                <p class="text-sm"><%= message.content %></p>
-                <p class="text-xs opacity-60 mt-1">
-                  <%= Calendar.strftime(message.timestamp, "%H:%M") %>
-                </p>
+        <!-- Feed Posts -->
+        <div id="feed-container" phx-hook="FeedAnimations" class="space-y-4 px-4 pb-20">
+          <%= for post <- @posts do %>
+            <div class="feed-post bg-white rounded-xl shadow-sm border border-onyx-mauve/10 overflow-hidden">
+              <!-- Post Header -->
+              <div class="p-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-full bg-verdant-forest/20 flex items-center justify-center">
+                    <span class="text-verdant-forest font-semibold"><%= if post.user, do: String.slice(post.user.name, 0..0), else: "?" %></span>
+                  </div>
+                  <div>
+                    <p class="font-semibold text-onyx-deep"><%= if post.user, do: post.user.name, else: "Unknown User" %></p>
+                    <p class="text-xs text-onyx-mauve"><%= time_ago(post.inserted_at) %></p>
+                  </div>
+                </div>
+                <button class="text-onyx-mauve hover:text-onyx-deep">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                  </svg>
+                </button>
+              </div>
+              
+              <!-- Post Content -->
+              <div class="px-4 pb-3">
+                <p class="text-onyx-deep"><%= post.content %></p>
+              </div>
+              
+              <!-- Post Actions -->
+              <div class="px-4 py-2 border-t border-gray-100 flex">
+                <button phx-click="like_post" phx-value-post_id={post.id} class="flex-1 flex items-center justify-center gap-2 py-2 text-onyx-mauve hover:text-verdant-forest transition-colors post-action-btn">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                  <span>Like</span>
+                </button>
+                <button class="flex-1 flex items-center justify-center gap-2 py-2 text-onyx-mauve hover:text-verdant-forest transition-colors post-action-btn">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  <span>Comment</span>
+                </button>
+                <button class="flex-1 flex items-center justify-center gap-2 py-2 text-onyx-mauve hover:text-verdant-forest transition-colors post-action-btn">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                  </svg>
+                  <span>Share</span>
+                </button>
               </div>
             </div>
           <% end %>
-          
-          <div :if={@thinking} class="flex justify-start">
-            <div class="bg-onyx-mauve/10 rounded-2xl px-4 py-3">
-              <div class="flex space-x-1">
-                <div class="w-2 h-2 bg-verdant-forest rounded-full animate-bounce"></div>
-                <div class="w-2 h-2 bg-verdant-forest rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
-                <div class="w-2 h-2 bg-verdant-forest rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
-      <!-- Input Area -->
-      <div class="border-t border-onyx-mauve/20 pt-4 mt-4">
-        <form phx-submit="send-message" class="flex gap-2">
-          <input
-            type="text"
-            name="message"
-            value={@input_text}
-            phx-change="update-input"
-            placeholder="Ask me anything..."
-            class="flex-1 bg-onyx-mauve/5 border border-onyx-mauve/20 rounded-full px-5 py-3 text-onyx-deep placeholder-onyx-mauve focus:outline-none focus:border-verdant-forest focus:ring-1 focus:ring-verdant-forest"
-          />
-          <button
-            type="submit"
-            class="bg-verdant-forest hover:bg-verdant-deep text-white rounded-full px-5 py-3 transition-colors disabled:opacity-50"
-            disabled={@thinking}
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
-          </button>
-        </form>
-        
-        <div class="flex justify-between items-center mt-3 text-xs text-onyx-mauve">
-          <div class="flex items-center gap-2">
-            <span :if={@user_location} class="flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-verdant-sage"></span>
-              <span>📍 Located</span>
-            </span>
-            <span :if={!@user_location} class="flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-onyx-mauve animate-pulse"></span>
-              <span>📍 Getting location...</span>
-            </span>
+      <!-- Floating Chat Button -->
+      <div id="chat-toggle" phx-hook="ChatToggle" class="fixed bottom-20 right-4 z-50">
+        <button class="bg-verdant-forest text-white p-4 rounded-full shadow-lg hover:bg-verdant-deep transition-all hover:scale-110">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- New Post Modal -->
+      <div :if={@show_new_post_modal} class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-md w-full modal-content">
+          <div class="p-4 border-b flex justify-between items-center">
+            <h3 class="text-lg font-semibold">Create Post</h3>
+            <button phx-click="close_new_post_modal" class="text-onyx-mauve hover:text-onyx-deep">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-          <span :if={@current_vibe == :calm} class="px-2 py-0.5 rounded-full text-xs font-medium bg-verdant-sage/20 text-verdant-sage">
-            Calm area
-          </span>
+          <div class="p-4">
+            <textarea phx-change="update_new_post" phx-debounce="300" value={@new_post_content} placeholder="What's on your mind?" class="w-full h-32 p-3 border rounded-lg resize-none focus:outline-none focus:border-verdant-forest"></textarea>
+          </div>
+          <div class="p-4 border-t flex justify-end">
+            <button phx-click="create_post" class="bg-verdant-forest text-white px-6 py-2 rounded-full hover:bg-verdant-deep transition-colors">
+              Post
+            </button>
+          </div>
         </div>
       </div>
     </div>
     """
   end
+
+  defp time_ago(datetime) do
+  now = DateTime.utc_now()
+  
+  # Convert NaiveDateTime to DateTime if needed
+  datetime_to_compare = case datetime do
+    %NaiveDateTime{} -> DateTime.from_naive!(datetime, "Etc/UTC")
+    %DateTime{} -> datetime
+  end
+  
+  diff = DateTime.diff(now, datetime_to_compare)
+  
+  cond do
+    diff < 60 -> "just now"
+    diff < 3600 -> "#{div(diff, 60)}m"
+    diff < 86400 -> "#{div(diff, 3600)}h"
+    true -> Calendar.strftime(datetime_to_compare, "%b %d")
+  end
+end
 end
