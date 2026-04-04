@@ -4,8 +4,11 @@ import topbar from "../vendor/topbar";
 import { OnlineTracker } from "./hooks/online_tracker";
 import { MapLibreHook } from "./hooks/maplibre";
 import { ScrollToBottom } from "./hooks/scroll_to_bottom";
-import "maplibre-gl/dist/maplibre-gl.css";
 import { ThemeToggle } from "./hooks/theme_toggle";
+import InfiniteScroll from "./hooks/infinite_scroll";
+import FeedAnimations from "./hooks/feed_animations";
+import ChatToggle from "./hooks/chat_toggle";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 // Get CSRF token from meta tag
 let csrfToken = document
@@ -16,10 +19,18 @@ let csrfToken = document
 let liveSocket = new LiveSocket("/live", Socket, {
   params: csrfToken ? { _csrf_token: csrfToken } : {},
   hooks: {
+    // Existing hooks
     ThemeToggle: ThemeToggle,
     MapLibre: MapLibreHook,
     OnlineTracker: OnlineTracker,
     ScrollToBottom: ScrollToBottom,
+
+    // New hooks for feed and chat
+    InfiniteScroll: InfiniteScroll,
+    FeedAnimations: FeedAnimations,
+    ChatToggle: ChatToggle,
+
+    // Geolocation hook
     Geolocation: {
       mounted() {
         if ("geolocation" in navigator) {
