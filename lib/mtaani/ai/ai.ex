@@ -1,0 +1,247 @@
+defmodule Mtaani.AI do
+  @moduledoc """
+  AI Service for Mtaani - Intelligent travel assistant
+  Uses Groq/Llama 3 for fast, accurate responses
+  """
+
+  alias Mtaani.Repo
+  alias Mtaani.Places.Place
+  alias Mtaani.SafetyZones.SafetyZone
+  alias Mtaani.Incidents.Incident
+  import Ecto.Query
+
+  @groq_api_url "https://api.groq.com/openai/v1/chat/completions"
+
+  # System prompt defining the AI's role and behavior
+  @system_prompt """
+  You are Mtaani AI, a smart, friendly travel assistant for Nairobi, Kenya.
+  
+  Your personality:
+  - Warm and helpful, like a local friend
+  - Knowledgeable about Nairobi's streets, culture, and safety
+  - Honest about limitations - if you don't know something, say so clearly
+  
+  Your capabilities:
+  - Recommend restaurants, cafes, attractions based on user preferences
+  - Provide safety guidance using real-time data
+  - Give directions using matatus, Uber, Bolt, or walking
+  - Find events and cultural activities
+  - Remember user preferences across conversations
+  
+  Important rules:
+  - NEVER invent information. If data isn't available, say: "I don't have that information yet. Check back soon as we're continuously adding more places!"
+  - Be concise. Keep responses under 150 words unless detailed info is requested.
+  - Use local terms naturally (matatu, boda, bob, Kencom, CBD)
+  - Prioritize safety in all recommendations
+  - When suggesting places, include approximate distance and vibe (calm/bustling)
+  
+  Always be honest about data limitations. If the database is empty, say so politely.
+  """
+
+  @doc """
+  Get a response from the AI based on user message and context
+  """
+  def chat(user_message, user_id, user_location \\ nil) do
+    # 1. Get user context (preferences, history)
+    user_context = get_user_context(user_id)
+    
+    # 2. Get location context (safety, nearby places)
+    location_context = get_location_context(user_location)
+    
+    # 3. Build the prompt
+    prompt = build_prompt(user_message, user_context, location_context)
+    
+    # 4. Call Groq API
+    call_groq(prompt)
+  end
+
+  defp get_user_context(user_id) do
+  user = Repo.get(Mtaani.Accounts.User, user_id)
+  
+  if user do
+    %{
+      name: user.name,
+      preferences: user.preferences || %{}
+    }
+  else
+    %{name: "Traveler", preferences: %{}}
+  end
+end
+
+  defp get_location_context(nil), do: %{has_location: false}
+
+  defp get_location_context(%{lat: lat, lng: lng}) do
+    # Get safety zone for this location
+    safety_zone = get_safety_zone(lat, lng)
+    
+    # Get recent incidents nearby
+    incidents = get_nearby_incidents(lat, lng, 1000)  # 1km radius
+    
+    # Get nearby places
+    nearby_places = get_nearby_places(lat, lng, 500)  # 500m radius
+    
+    %{
+      has_location: true,
+      lat: lat,
+      lng: lng,
+      safety_zone: safety_zone,
+      incidents: incidents,
+      nearby_places: nearby_places
+    }
+  end
+
+  defp get_safety_zone(lat, lng) do
+    # Use fragment for PostGIS ST_Contains function
+    query = from sz in SafetyZone,
+      where: fragment("ST_Contains(?, ST_SetSRID(ST_MakePoint(?, ?), 4326))", sz.area, ^lng, ^lat),
+      select: %{name: sz.name, safety_level: sz.safety_level}
+    
+    case Repo.one(query) do
+      nil -> %{name: "Unknown area", safety_level: 2}
+      zone -> zone
+    end
+  end
+
+  defp get_nearby_incidents(lat, lng, radius_m) do
+    # Use fragment for PostGIS ST_DWithin function
+    query = from i in Incident,
+      where: fragment("ST_DWithin(?, ST_SetSRID(ST_MakePoint(?, ?), 4326), ?)", i.location, ^lng, ^lat, ^radius_m) and i.resolved == false,
+      select: %{type: i.type, severity: i.severity, description: i.description},
+      limit: 5
+    
+    Repo.all(query)
+  end
+
+  defp get_nearby_places(lat, lng, radius_m) do
+    # Use fragment for PostGIS ST_DWithin function
+    query = from p in Place,
+      where: fragment("ST_DWithin(?, ST_SetSRID(ST_MakePoint(?, ?), 4326), ?)", p.location, ^lng, ^lat, ^radius_m),
+      select: %{name: p.name, category: p.category, safety_score: p.safety_score},
+      limit: 10
+    
+    Repo.all(query)
+  end
+
+  defp build_prompt(user_message, user_context, location_context) do
+  context_parts = []
+
+  # Add user context
+  context_parts = ["User: #{user_context.name}" | context_parts]
+  
+  if user_context.preferences != %{} do
+    context_parts = ["Preferences: #{inspect(user_context.preferences)}" | context_parts]
+  end
+
+  # Add location context if available
+  if location_context.has_location do
+    location_text = """
+    Current location: #{location_context.safety_zone.name}
+    Safety level: #{safety_level_to_text(location_context.safety_zone.safety_level)}
+    """
+    context_parts = [location_text | context_parts]
+    
+    if length(location_context.incidents) > 0 do
+      incidents_text = "Recent incidents nearby: " <> Enum.map_join(location_context.incidents, ", ", &(&1.type))
+      context_parts = [incidents_text | context_parts]
+    end
+    
+    if length(location_context.nearby_places) > 0 do
+      places_text = "Nearby places: " <> Enum.map_join(location_context.nearby_places, ", ", &("#{&1.name} (#{&1.category})"))
+      context_parts = [places_text | context_parts]
+    end
+  else
+    context_parts = ["Location: Not shared. User hasn't enabled location services." | context_parts]
+  end
+
+  context = Enum.join(Enum.reverse(context_parts), "\n")
+
+  """
+  #{@system_prompt}
+  
+  Current context:
+  #{context}
+  
+  User message: #{user_message}
+  
+  Respond as Mtaani AI. Be helpful, concise, and honest about any missing data.
+  """
+end
+
+  defp safety_level_to_text(1), do: "Calm - good for walking"
+  defp safety_level_to_text(2), do: "Bustling - normal urban caution advised"
+  defp safety_level_to_text(3), do: "Caution advised - stay aware of surroundings"
+  defp safety_level_to_text(_), do: "Unknown"
+
+  defp call_groq(prompt) do
+    api_key = Application.get_env(:mtaani, :groq_api_key) || System.get_env("GROQ_API_KEY")
+    
+    # Check if we have a valid API key
+    has_valid_key = api_key && 
+                    api_key != "" && 
+                    String.starts_with?(api_key, "gsk_") &&
+                    String.length(api_key) > 10
+    
+    if has_valid_key do
+      case make_groq_request(prompt, api_key) do
+        {:ok, response} -> {:ok, response}
+        {:error, reason} -> 
+          IO.puts("Groq API error: #{reason}. Falling back to simulation.")
+          {:ok, simulate_ai_response(prompt)}
+      end
+    else
+      IO.puts("No valid Groq API key found. Using simulated responses.")
+      {:ok, simulate_ai_response(prompt)}
+    end
+  end
+
+  defp make_groq_request(prompt, api_key) do
+    headers = [
+      {"Authorization", "Bearer #{api_key}"},
+      {"Content-Type", "application/json"}
+    ]
+    
+    body = %{
+      model: "llama3-8b-8192",
+      messages: [
+        %{role: "system", content: @system_prompt},
+        %{role: "user", content: prompt}
+      ],
+      temperature: 0.7,
+      max_tokens: 500
+    }
+    
+    case HTTPoison.post(@groq_api_url, Jason.encode!(body), headers, timeout: 30_000, recv_timeout: 30_000) do
+      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+        case Jason.decode(body) do
+          {:ok, %{"choices" => [%{"message" => %{"content" => content}}]}} ->
+            {:ok, content}
+          _ ->
+            {:error, "Failed to parse AI response"}
+        end
+      {:ok, %HTTPoison.Response{status_code: status}} ->
+        {:error, "API error: #{status}"}
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, "Connection error: #{reason}"}
+    end
+  end
+
+  # Fallback simulation for development without API key
+  defp simulate_ai_response(prompt) do
+    cond do
+      String.contains?(prompt, "food") or String.contains?(prompt, "restaurant") or String.contains?(prompt, "eat") ->
+        "I'd love to recommend some local food spots! Based on your location, there are several options nearby. Mama's Kitchen is a local favorite for authentic Kenyan cuisine. Would you like directions or more details? (Note: This is a simulated response. Real AI responses will be available when the Groq API key is configured.)"
+      
+      String.contains?(prompt, "safe") or String.contains?(prompt, "safety") or String.contains?(prompt, "calm") ->
+        "Safety is our top priority. Your current area is generally calm during the day. I recommend staying on main roads and being aware of your surroundings. Would you like me to show you the safest route to your destination? (Note: This is a simulated response. Real AI responses will be available when the Groq API key is configured.)"
+      
+      String.contains?(prompt, "direction") or String.contains?(prompt, "get to") or String.contains?(prompt, "route") ->
+        "I can help with directions! Based on your location, I recommend using Uber or Bolt for reliable transport. Matatus are also available for budget-friendly travel. Where would you like to go? (Note: This is a simulated response. Real AI responses will be available when the Groq API key is configured.)"
+      
+      String.contains?(prompt, "event") or String.contains?(prompt, "happening") or String.contains?(prompt, "today") ->
+        "Events are being added to our database. Check local venues like The Alchemist or Kenya National Theatre for current shows. I'll have more recommendations soon! (Note: This is a simulated response. Real AI responses will be available when the Groq API key is configured.)"
+      
+      true ->
+        "I'm here to help! You can ask me about local restaurants, safety information, directions, transport options, or upcoming events. What would you like to know about Nairobi? (Note: This is a simulated response. Real AI responses will be available when the Groq API key is configured.)"
+    end
+  end
+end
