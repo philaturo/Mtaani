@@ -4,6 +4,20 @@
 # This configuration file is loaded before any dependency and
 # is restricted to this project.
 
+# Load environment variables from .env file if it exists
+if File.exists?(".env") do
+  File.stream!(".env")
+  |> Enum.each(fn line ->
+    line = String.trim(line)
+    if line != "" and not String.starts_with?(line, "#") do
+      case String.split(line, "=", parts: 2) do
+        [key, value] -> System.put_env(key, value)
+        _ -> :ok
+      end
+    end
+  end)
+end
+
 # General application configuration
 import Config
 
@@ -59,6 +73,9 @@ config :logger, :default_formatter,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
+
+# Groq API Key (loaded from .env or environment variable)
+config :mtaani, :groq_api_key, System.get_env("GROQ_API_KEY")
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
