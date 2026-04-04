@@ -120,16 +120,15 @@ end
    # Repo.all(query)
   #end
 
-  # Simple fall backs to replace PostGIS functionality for now
-    defp get_safety_zone(lat, lng) do
+  defp get_safety_zone(_lat, _lng) do
   %{name: "Nairobi Area", incident_count: 0}
 end
 
-defp get_nearby_incidents(lat, lng, radius_m) do
+defp get_nearby_incidents(_lat, _lng, _radius_m) do
   []
 end
 
-defp get_nearby_places(lat, lng, radius_m) do
+defp get_nearby_places(_lat, _lng, _radius_m) do
   []
 end
 
