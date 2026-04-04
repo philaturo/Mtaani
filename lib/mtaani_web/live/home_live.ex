@@ -11,7 +11,6 @@ defmodule MtaaniWeb.HomeLive do
     current_user_id = session["user_id"] || 1
     current_user = Mtaani.Repo.get(User, current_user_id)
     
-    # Load real feed posts
     posts = load_feed_posts()
     
     socket =
@@ -38,7 +37,6 @@ defmodule MtaaniWeb.HomeLive do
     {:ok, socket}
   end
 
-  # Load real posts from database
   defp load_feed_posts do
     query = from post in Post,
       order_by: [desc: post.inserted_at],
@@ -58,30 +56,40 @@ defmodule MtaaniWeb.HomeLive do
     {:noreply, push_event(socket, "online_count_update", %{count: count})}
   end
 
-  # Real-time feed updates
   @impl true
   def handle_info({:new_post, post}, socket) do
     posts = [post | socket.assigns.posts]
     {:noreply, assign(socket, :posts, posts)}
   end
 
-  # AI Response Handler
   @impl true
   def handle_info({:ai_response, user_message}, socket) do
     user_id = socket.assigns.current_user_id
     location = socket.assigns.user_location
     
     case AI.chat(user_message, user_id, location) do
-  {:ok, response} ->
-    messages = socket.assigns.messages ++ [%{role: :assistant, content: response, timestamp: DateTime.utc_now()}]
-    {:noreply, assign(socket, [messages: messages, thinking: false])}
+      {:ok, response} ->
+        messages = socket.assigns.messages ++ [%{role: :assistant, content: response, timestamp: DateTime.utc_now()}]
+        {:noreply,
+          socket
+          |> assign(:messages, messages)
+          |> assign(:thinking, false)
+          |> push_event("ai_response", %{message: response})
+        }
+    end
   end
- end
 
-  # Load more posts for infinite scroll
+  @impl true
+  def handle_event("quick_action", %{"message" => message}, socket) do
+    messages = socket.assigns.messages ++ [%{role: :user, content: message, timestamp: DateTime.utc_now()}]
+    socket = assign(socket, [messages: messages, thinking: true])
+    send(self(), {:ai_response, message})
+    {:noreply, socket}
+  end
+
   @impl true
   def handle_event("load_more", %{"page" => page}, socket) do
-    page_num = String.to_integer(page)
+    page_num = if is_binary(page), do: String.to_integer(page), else: page
     offset = (page_num - 1) * 10
     
     query = from post in Post,
@@ -97,10 +105,8 @@ defmodule MtaaniWeb.HomeLive do
     {:reply, %{has_more: has_more}, assign(socket, :posts, all_posts)}
   end
 
-  # Feed interactions
   @impl true
   def handle_event("like_post", %{"post_id" => _post_id}, socket) do
-    # TODO: Implement like functionality
     {:noreply, socket}
   end
 
@@ -141,22 +147,11 @@ defmodule MtaaniWeb.HomeLive do
     end
   end
 
-  # Quick action buttons (for AI)
-  @impl true
-  def handle_event("quick_action", %{"message" => message}, socket) do
-    messages = socket.assigns.messages ++ [%{role: :user, content: message, timestamp: DateTime.utc_now()}]
-    socket = assign(socket, [messages: messages, thinking: true])
-    send(self(), {:ai_response, message})
-    {:noreply, socket}
-  end
-
-  # Navigation
   @impl true
   def handle_event("navigate", %{"page" => page}, socket) do
     {:noreply, push_navigate(socket, to: "/#{page}")}
   end
 
-  # Location handlers
   @impl true
   def handle_event("location-update", %{"lat" => lat, "lng" => lng}, socket) do
     {:noreply, assign(socket, :user_location, %{lat: lat, lng: lng})}
@@ -173,7 +168,6 @@ defmodule MtaaniWeb.HomeLive do
     {:noreply, assign(socket, :user_location, %{lat: lat, lng: lng})}
   end
 
-  # AI Chat handlers
   @impl true
   def handle_event("update-input", %{"message" => message}, socket) do
     {:noreply, assign(socket, :input_text, message)}
@@ -190,13 +184,11 @@ defmodule MtaaniWeb.HomeLive do
   @impl true
   def handle_event("send-message", _, socket), do: {:noreply, socket}
 
-  # Toggle chat (JS handles the UI)
   @impl true
   def handle_event("toggle_chat", _, socket) do
     {:noreply, socket}
   end
 
-  # Online tracking
   @impl true
   def handle_event("user_online", %{"user_id" => user_id}, socket) do
     MtaaniWeb.OnlineTracker.add_user(user_id)
@@ -209,7 +201,6 @@ defmodule MtaaniWeb.HomeLive do
     {:noreply, socket}
   end
   
-  # Emergency Modal Handlers
   @impl true
   def handle_event("open_emergency", _, socket) do
     {:noreply, assign(socket, :show_emergency, true)}
@@ -259,10 +250,8 @@ defmodule MtaaniWeb.HomeLive do
   def render(assigns) do
     ~H"""
     <div class="h-full flex flex-col bg-gradient-to-b from-onyx/5 to-white">
-      <!-- Stories Bar -->
       <div class="stories-container overflow-x-auto px-4 py-3 border-b border-onyx-mauve/10">
         <div class="flex gap-3">
-          <!-- Add Story Button -->
           <div class="flex-shrink-0 text-center cursor-pointer">
             <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-verdant-sage to-verdant-forest p-0.5">
               <div class="w-full h-full rounded-full bg-white flex items-center justify-center">
@@ -276,9 +265,7 @@ defmodule MtaaniWeb.HomeLive do
         </div>
       </div>
 
-      <!-- Main Feed with Infinite Scroll -->
       <div id="feed-scroll" phx-hook="InfiniteScroll" class="flex-1 overflow-y-auto custom-scrollbar">
-        <!-- Create Post Box -->
         <div class="bg-white rounded-xl shadow-sm p-4 m-4 border border-onyx-mauve/10">
           <div class="flex gap-3">
             <div class="w-10 h-10 rounded-full bg-verdant-forest/20 flex items-center justify-center">
@@ -304,11 +291,9 @@ defmodule MtaaniWeb.HomeLive do
           </div>
         </div>
 
-        <!-- Feed Posts -->
         <div id="feed-container" phx-hook="FeedAnimations" class="space-y-4 px-4 pb-20">
           <%= for post <- @posts do %>
             <div class="feed-post bg-white rounded-xl shadow-sm border border-onyx-mauve/10 overflow-hidden">
-              <!-- Post Header -->
               <div class="p-4 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <div class="w-10 h-10 rounded-full bg-verdant-forest/20 flex items-center justify-center">
@@ -326,12 +311,10 @@ defmodule MtaaniWeb.HomeLive do
                 </button>
               </div>
               
-              <!-- Post Content -->
               <div class="px-4 pb-3">
                 <p class="text-onyx-deep"><%= post.content %></p>
               </div>
               
-              <!-- Post Actions -->
               <div class="px-4 py-2 border-t border-gray-100 flex">
                 <button phx-click="like_post" phx-value-post_id={post.id} class="flex-1 flex items-center justify-center gap-2 py-2 text-onyx-mauve hover:text-verdant-forest transition-colors post-action-btn">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -357,7 +340,6 @@ defmodule MtaaniWeb.HomeLive do
         </div>
       </div>
 
-      <!-- Floating Chat Button -->
       <div id="chat-toggle" phx-hook="ChatToggle" class="fixed bottom-20 right-4 z-50">
         <button class="bg-verdant-forest text-white p-4 rounded-full shadow-lg hover:bg-verdant-deep transition-all hover:scale-110">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -366,7 +348,6 @@ defmodule MtaaniWeb.HomeLive do
         </button>
       </div>
 
-      <!-- New Post Modal -->
       <div :if={@show_new_post_modal} class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-xl max-w-md w-full modal-content">
           <div class="p-4 border-b flex justify-between items-center">
@@ -392,21 +373,20 @@ defmodule MtaaniWeb.HomeLive do
   end
 
   defp time_ago(datetime) do
-  now = DateTime.utc_now()
-  
-  # Convert NaiveDateTime to DateTime if needed
-  datetime_to_compare = case datetime do
-    %NaiveDateTime{} -> DateTime.from_naive!(datetime, "Etc/UTC")
-    %DateTime{} -> datetime
+    now = DateTime.utc_now()
+    
+    datetime_to_compare = case datetime do
+      %NaiveDateTime{} -> DateTime.from_naive!(datetime, "Etc/UTC")
+      %DateTime{} -> datetime
+    end
+    
+    diff = DateTime.diff(now, datetime_to_compare)
+    
+    cond do
+      diff < 60 -> "just now"
+      diff < 3600 -> "#{div(diff, 60)}m"
+      diff < 86400 -> "#{div(diff, 3600)}h"
+      true -> Calendar.strftime(datetime_to_compare, "%b %d")
+    end
   end
-  
-  diff = DateTime.diff(now, datetime_to_compare)
-  
-  cond do
-    diff < 60 -> "just now"
-    diff < 3600 -> "#{div(diff, 60)}m"
-    diff < 86400 -> "#{div(diff, 3600)}h"
-    true -> Calendar.strftime(datetime_to_compare, "%b %d")
-  end
-end
 end
