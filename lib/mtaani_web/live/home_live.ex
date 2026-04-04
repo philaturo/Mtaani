@@ -1,14 +1,18 @@
 defmodule MtaaniWeb.HomeLive do
   use MtaaniWeb, :live_view
+  
+  alias Mtaani.AI
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(_params, session, socket) do
     user = %{name: "Explorer"}
+    current_user_id = session["user_id"] || 1
     
     socket =
       socket
       |> assign(:active_tab, "home")
       |> assign(:show_emergency, false)
+      |> assign(:current_user_id, current_user_id)
       |> assign(:user, user)
       |> assign(:messages, [])
       |> assign(:input_text, "")
@@ -35,15 +39,21 @@ defmodule MtaaniWeb.HomeLive do
     {:noreply, push_event(socket, "online_count_update", %{count: count})}
   end
 
+  # AI Response Handler
   @impl true
   def handle_info({:ai_response, user_message}, socket) do
-    response = """
-    I understand you're asking about "#{user_message}". 
-    With your current location, I can help you find local spots, 
-    check safety conditions, or give you directions.
-    """
-    messages = socket.assigns.messages ++ [%{role: :assistant, content: response, timestamp: DateTime.utc_now()}]
-    {:noreply, assign(socket, [messages: messages, thinking: false])}
+    user_id = socket.assigns.current_user_id
+    location = socket.assigns.user_location
+    
+    case AI.chat(user_message, user_id, location) do
+      {:ok, response} ->
+        messages = socket.assigns.messages ++ [%{role: :assistant, content: response, timestamp: DateTime.utc_now()}]
+        {:noreply, assign(socket, [messages: messages, thinking: false])}
+      
+      {:error, error_msg} ->
+        messages = socket.assigns.messages ++ [%{role: :assistant, content: error_msg, timestamp: DateTime.utc_now()}]
+        {:noreply, assign(socket, [messages: messages, thinking: false])}
+    end
   end
 
   # ==================== ALL handle_event/3 FUNCTIONS ====================
@@ -99,7 +109,7 @@ defmodule MtaaniWeb.HomeLive do
     {:noreply, socket}
   end
   
-    # Emergency Modal Handlers
+  # Emergency Modal Handlers
   @impl true
   def handle_event("open_emergency", _, socket) do
     {:noreply, assign(socket, :show_emergency, true)}
@@ -140,12 +150,13 @@ defmodule MtaaniWeb.HomeLive do
     {:noreply, push_event(socket, "trigger_emergency", %{})}
   end
 
-  # ==================== END handle_event/3 FUNCTIONS ====================
-
+  # Logout Handler
   @impl true
-def handle_event("logout", _, socket) do
-  {:noreply, push_navigate(socket, to: "/logout")}
-end
+  def handle_event("logout", _, socket) do
+    {:noreply, push_navigate(socket, to: "/logout")}
+  end
+
+  # ==================== END handle_event/3 FUNCTIONS ====================
 
   @impl true
   def render(assigns) do
