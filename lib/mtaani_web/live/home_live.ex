@@ -256,6 +256,29 @@ end
     {:noreply, push_navigate(socket, to: "/logout")}
   end
 
+  # Pull-to-refresh handler
+@impl true
+def handle_event("refresh_feed", _, socket) do
+  # Reload posts
+  posts = load_feed_posts()
+  
+  # If location exists, refresh AI context (preserves conversation memory)
+  if socket.assigns.user_location do
+    # Send silent refresh to AI to update context without losing chat history
+    send(self(), {:refresh_ai_context, socket.assigns.user_location})
+  end
+  
+  {:reply, %{}, assign(socket, posts: posts, loading_posts: false)}
+end
+
+# AI context refresh (preserves conversation memory)
+@impl true
+def handle_info({:refresh_ai_context, location}, socket) do
+  # This silently updates the AI's location context
+  # The AI will use this for future queries but remember past conversation
+  {:noreply, assign(socket, :user_location, location)}
+end
+
   @impl true
 def render(assigns) do
   ~H"""
@@ -275,7 +298,7 @@ def render(assigns) do
       </div>
     </div>
 
-    <div id="feed-scroll" phx-hook="InfiniteScroll" class="flex-1 overflow-y-auto custom-scrollbar">
+    <div id="feed-scroll" phx-hook="PullToRefresh" class="flex-1 overflow-y-auto custom-scrollbar">
       <div class="bg-white rounded-xl shadow-sm p-4 m-4 border border-onyx-mauve/10">
         <div class="flex gap-3">
           <div class="w-10 h-10 rounded-full bg-verdant-forest/20 flex items-center justify-center">
