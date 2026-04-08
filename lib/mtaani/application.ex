@@ -7,7 +7,9 @@ defmodule Mtaani.Application do
       Mtaani.Repo,
       {Phoenix.PubSub, name: Mtaani.PubSub},
       MtaaniWeb.OnlineTracker,
-      MtaaniWeb.Endpoint
+      MtaaniWeb.Endpoint,
+      # Redis connection for read receipts and caching
+      {Redix, name: :redix, host: "localhost", port: 6379}
     ]
 
     opts = [strategy: :one_for_one, name: Mtaani.Supervisor]
