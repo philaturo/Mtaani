@@ -372,3 +372,33 @@ body {
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
+
+/* ==================== PULL TO REFRESH STYLES ==================== */
+
+.pull-to-refresh-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60px;
+  margin-top: -60px;
+  width: 100%;
+  transition: margin-top 0.3s ease-out;
+}
+
+.pull-to-refresh-indicator .refresh-spinner {
+  margin-bottom: 8px;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
