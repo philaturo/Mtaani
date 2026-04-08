@@ -27,6 +27,7 @@ defmodule MtaaniWeb.HomeLive do
       |> assign(:new_post_content, "")
       |> assign(:show_new_post_modal, false)
       |> assign(:stories, [])
+      |> assign(:typing_users, [])
 
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Mtaani.PubSub, "feed_updates")
@@ -360,6 +361,26 @@ def handle_event("remove_reaction", %{"post_id" => post_id, "emoji" => emoji}, s
   end
 end
 
+  # Typing indicator handlers
+@impl true
+def handle_event("user_typing", %{"type" => "feed", "id" => post_id}, socket) do
+  user = socket.assigns.current_user
+  current_typing = socket.assigns.typing_users
+  
+  if !Enum.any?(current_typing, &(&1.id == user.id)) do
+    {:noreply, assign(socket, :typing_users, current_typing ++ [user])}
+  else
+    {:noreply, socket}
+  end
+end
+
+@impl true
+def handle_event("user_stopped_typing", %{"type" => "feed", "id" => _post_id}, socket) do
+  user = socket.assigns.current_user
+  current_typing = socket.assigns.typing_users
+  {:noreply, assign(socket, :typing_users, Enum.reject(current_typing, &(&1.id == user.id)))}
+end
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -527,6 +548,37 @@ end
     </button>
   <% end %>
 </div>
+
+<div id="comment-input-<%= post.id %>" phx-hook="TypingIndicator" data-current-user-id={@current_user_id} data-target-type="feed" data-target-id={post.id}>
+      <input type="text" placeholder="Write a comment..." class="w-full px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 focus:outline-none focus:ring-1 focus:ring-verdant-forest" />
+    </div>
+
+ <!-- Typing indicator -->
+<%= if @typing_users != [] do %>
+  <div class="px-4 py-2">
+    <div class="flex items-center gap-2">
+      <div class="flex -space-x-1">
+        <%= for typing_user <- Enum.take(@typing_users, 3) do %>
+          <div class="w-6 h-6 rounded-full bg-verdant-forest/20 flex items-center justify-center text-xs">
+            <%= String.slice(typing_user.name, 0..0) %>
+          </div>
+        <% end %>
+      </div>
+      <p class="text-sm text-onyx-mauve">
+        <%= if length(@typing_users) == 1 do %>
+          <%= List.first(@typing_users).name %> is typing
+        <% else %>
+          <%= length(@typing_users) %> people are typing
+        <% end %>
+      </p>
+      <div class="flex gap-0.5">
+        <span class="w-1 h-1 bg-verdant-forest rounded-full animate-bounce" style="animation-delay: 0s"></span>
+        <span class="w-1 h-1 bg-verdant-forest rounded-full animate-bounce" style="animation-delay: 0.2s"></span>
+        <span class="w-1 h-1 bg-verdant-forest rounded-full animate-bounce" style="animation-delay: 0.4s"></span>
+      </div>
+    </div>
+  </div>
+<% end %>
 
 <!-- Action Buttons -->
 <div class="px-4 py-2 flex">
