@@ -363,7 +363,7 @@ end
 
   # Typing indicator handlers
 @impl true
-def handle_event("user_typing", %{"type" => "feed", "id" => post_id}, socket) do
+def handle_event("user_typing", %{"type" => "feed", "id" => _post_id}, socket) do
   user = socket.assigns.current_user
   current_typing = socket.assigns.typing_users
   
@@ -549,9 +549,15 @@ end
   <% end %>
 </div>
 
-<div id="comment-input-<%= post.id %>" phx-hook="TypingIndicator" data-current-user-id={@current_user_id} data-target-type="feed" data-target-id={post.id}>
-      <input type="text" placeholder="Write a comment..." class="w-full px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 focus:outline-none focus:ring-1 focus:ring-verdant-forest" />
-    </div>
+<div 
+  id="comment-input-{post.id}" 
+  phx-hook="TypingIndicator"
+  data-current-user-id={@current_user_id}
+  data-target-type="feed"
+  data-target-id={post.id}
+>
+  <input type="text" placeholder="Write a comment..." class="w-full px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 focus:outline-none focus:ring-1 focus:ring-verdant-forest" />
+</div>
 
  <!-- Typing indicator -->
 <%= if @typing_users != [] do %>
