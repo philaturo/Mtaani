@@ -11,6 +11,7 @@ import ChatToggle from "./hooks/chat_toggle";
 import "maplibre-gl/dist/maplibre-gl.css";
 import PullToRefresh from "./hooks/pull_to_refresh";
 import TypingIndicator from "./hooks/typing_indicator";
+import MessageObserver from "./hooks/message_observer";
 
 // Get CSRF token from meta tag
 let csrfToken = document
@@ -28,6 +29,7 @@ let liveSocket = new LiveSocket("/live", Socket, {
     ScrollToBottom: ScrollToBottom,
     PullToRefresh: PullToRefresh,
     TypingIndicator: TypingIndicator,
+    MessageObserver: MessageObserver,
 
     // New hooks for feed and chat
     InfiniteScroll: InfiniteScroll,
