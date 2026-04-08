@@ -3,11 +3,14 @@ defmodule Mtaani.Social.Post do
   import Ecto.Changeset
 
   schema "posts" do
-    field :content, :string
-    belongs_to :user, Mtaani.Accounts.User
-        
-    timestamps()  # This already creates inserted_at and updated_at
-  end
+  field :content, :string
+  field :likes_count, :integer, default: 0
+  field :reposts_count, :integer, default: 0
+  field :comments_count, :integer, default: 0
+  field :bookmarks_count, :integer, default: 0
+  belongs_to :user, Mtaani.Accounts.User
+  timestamps()
+end
 
   def changeset(post, attrs) do
     post
