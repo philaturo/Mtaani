@@ -9,6 +9,7 @@ import InfiniteScroll from "./hooks/infinite_scroll";
 import FeedAnimations from "./hooks/feed_animations";
 import ChatToggle from "./hooks/chat_toggle";
 import "maplibre-gl/dist/maplibre-gl.css";
+import PullToRefresh from "./hooks/pull_to_refresh";
 
 // Get CSRF token from meta tag
 let csrfToken = document
@@ -24,6 +25,7 @@ let liveSocket = new LiveSocket("/live", Socket, {
     MapLibre: MapLibreHook,
     OnlineTracker: OnlineTracker,
     ScrollToBottom: ScrollToBottom,
+    PullToRefresh: PullToRefresh,
 
     // New hooks for feed and chat
     InfiniteScroll: InfiniteScroll,
