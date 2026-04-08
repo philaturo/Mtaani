@@ -207,6 +207,23 @@ window.addEventListener("phx:trigger_emergency", (e) => {
   }
 });
 
+// ==================== TOGGLE COMMENT INPUT ====================
+document.addEventListener("click", (e) => {
+  const commentButton = e.target.closest(".comment-button");
+  if (commentButton) {
+    e.preventDefault();
+    const postId = commentButton.dataset.postId;
+    const commentSection = document.getElementById(`comment-section-${postId}`);
+    if (commentSection) {
+      commentSection.classList.toggle("hidden");
+      const input = commentSection.querySelector("input");
+      if (input && !commentSection.classList.contains("hidden")) {
+        setTimeout(() => input.focus(), 100);
+      }
+    }
+  }
+});
+
 // ==================== PROFILE PHOTO PREVIEW ====================
 // Profile photo preview and upload
 const photoInput = document.getElementById("profile-photo");
