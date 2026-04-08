@@ -12,6 +12,7 @@ defmodule MtaaniWeb.ChatLive do
       |> assign(:conversations, get_conversations())
       |> assign(:selected_conversation, nil)
       |> assign(:messages, [])
+      |> assign(:chat_id, nil)  # ADD THIS - for tracking current chat
 
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Mtaani.PubSub, "online_count")
@@ -19,6 +20,43 @@ defmodule MtaaniWeb.ChatLive do
 
     {:ok, socket}
   end
+
+  # ==================== READ RECEIPTS HANDLERS ====================
+  
+  # Mark message as read when user views it
+  @impl true
+  def handle_event("mark_read", %{"message_id" => message_id}, socket) do
+    user_id = socket.assigns.current_user_id
+    
+    case Mtaani.Chat.mark_read(message_id, user_id) do
+      {:ok, _} ->
+        # Broadcast to other participants that this message was read
+        if socket.assigns.chat_id do
+          Phoenix.PubSub.broadcast(Mtaani.PubSub, "chat:#{socket.assigns.chat_id}", 
+            {:message_read, message_id, user_id})
+        end
+        {:noreply, socket}
+      {:error, _} ->
+        {:noreply, socket}
+    end
+  end
+
+  # Handle broadcast of read status from other users
+  @impl true
+  def handle_info({:message_read, message_id, reader_id}, socket) do
+    # Update UI to show blue checkmark for this message
+    {:noreply, push_event(socket, "message_read", %{message_id: message_id, reader_id: reader_id})}
+  end
+
+  # Mark message as delivered when sent
+  @impl true
+  def handle_info({:message_delivered, message_id}, socket) do
+    now = DateTime.utc_now()
+    Mtaani.Chat.mark_delivered(message_id, now)
+    {:noreply, socket}
+  end
+
+  # ==================== END READ RECEIPTS HANDLERS ====================
 
   @impl true
   def render(assigns) do
@@ -144,11 +182,10 @@ defmodule MtaaniWeb.ChatLive do
     {:noreply, assign(socket, :search_query, query)}
   end
 
-  def handle_event("select_conversation", %{"id" => _id}, socket) do
-  # This will be implemented when we add conversation functionality
-  # The underscore tells Elixir this variable is intentionally unused
-  {:noreply, socket}
-end
+  def handle_event("select_conversation", %{"id" => id}, socket) do
+    # Store chat_id for read receipt broadcasts
+    {:noreply, assign(socket, :chat_id, id)}
+  end
 
   # Emergency handlers
   @impl true
