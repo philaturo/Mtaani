@@ -242,33 +242,6 @@ body {
   animation: slideOut 0.3s ease-out;
 }
 
-/* Chat panel styling */
-.chat-panel {
-  max-height: 80vh;
-  min-height: 400px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
-}
-
-/* Chat panel scrollbar */
-.chat-panel .overflow-y-auto::-webkit-scrollbar {
-  width: 6px;
-}
-
-.chat-panel .overflow-y-auto::-webkit-scrollbar-track {
-  background: var(--color-onyx-mauve);
-  border-radius: 3px;
-}
-
-.chat-panel .overflow-y-auto::-webkit-scrollbar-thumb {
-  background: var(--color-verdant-forest);
-  border-radius: 3px;
-}
-
-.chat-panel .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-  background: var(--color-verdant-deep);
-}
-
 /* Feed post hover effects */
 .feed-post {
   transition:
@@ -469,4 +442,191 @@ body {
     transform: translateY(-4px);
     opacity: 1;
   }
+}
+
+/* ==================== GLASSMORPHIC CHAT PANEL ==================== */
+
+/* Frosted glass base */
+.glass-panel {
+  background: rgba(255, 252, 252, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(46, 107, 70, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.dark .glass-panel {
+  background: rgba(26, 26, 26, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(93, 168, 122, 0.3);
+}
+
+/* Neuromorphic chat bubbles */
+.chat-bubble-user {
+  background: linear-gradient(135deg, #2e6b46 0%, #17402a 100%);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border-radius: 20px 20px 4px 20px;
+}
+
+.chat-bubble-ai {
+  background: rgba(188, 171, 176, 0.15);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(188, 171, 176, 0.3);
+  border-radius: 20px 20px 20px 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.dark .chat-bubble-ai {
+  background: rgba(93, 168, 122, 0.15);
+  border: 1px solid rgba(93, 168, 122, 0.3);
+}
+
+/* Gradient header */
+.chat-header-gradient {
+  background: linear-gradient(135deg, #2e6b46 0%, #5da87a 100%);
+}
+
+.dark .chat-header-gradient {
+  background: linear-gradient(135deg, #17402a 0%, #2e6b46 100%);
+}
+
+/* Glossy acrylic effect */
+.acrylic-gloss {
+  position: relative;
+  overflow: hidden;
+}
+
+.acrylic-gloss::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.acrylic-gloss:hover::before {
+  left: 100%;
+}
+
+/* Chat panel full-screen mode */
+.chat-panel-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  max-height: 100vh;
+  border-radius: 0;
+  z-index: 1000;
+}
+
+/* Smooth transitions */
+.chat-panel {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Message animations */
+.message-enter {
+  animation: messageSlideIn 0.3s ease-out;
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Consistent spacing variables */
+:root {
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-full: 9999px;
+}
+
+/* ==================== CONSISTENT SPACING UTILITIES ==================== */
+
+/* Standard spacing classes */
+.space-xs {
+  padding: var(--spacing-xs);
+  margin: var(--spacing-xs);
+}
+.space-sm {
+  padding: var(--spacing-sm);
+  margin: var(--spacing-sm);
+}
+.space-md {
+  padding: var(--spacing-md);
+  margin: var(--spacing-md);
+}
+.space-lg {
+  padding: var(--spacing-lg);
+  margin: var(--spacing-lg);
+}
+.space-xl {
+  padding: var(--spacing-xl);
+  margin: var(--spacing-xl);
+}
+
+/* Consistent border radius */
+.radius-sm {
+  border-radius: var(--radius-sm);
+}
+.radius-md {
+  border-radius: var(--radius-md);
+}
+.radius-lg {
+  border-radius: var(--radius-lg);
+}
+.radius-xl {
+  border-radius: var(--radius-xl);
+}
+.radius-full {
+  border-radius: var(--radius-full);
+}
+
+/* Safe area insets for notched phones */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-left {
+  padding-left: env(safe-area-inset-left);
+}
+
+.safe-right {
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Bottom navigation spacing */
+.bottom-nav-spacing {
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom));
 }
