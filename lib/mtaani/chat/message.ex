@@ -10,6 +10,8 @@ defmodule Mtaani.Chat.Message do
     field :is_deleted, :boolean, default: false
     field :is_edited, :boolean, default: false
     field :reply_to_id, :id
+    field :delivered_at, :utc_datetime
+    field :read_at, :utc_datetime 
     
     # belongs_to automatically creates user_id and group_id fields
     belongs_to :user, Mtaani.Accounts.User
