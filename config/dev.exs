@@ -20,7 +20,7 @@ config :mtaani, Mtaani.Repo,
 # to bundle .js and .css sources.
 config :mtaani, MtaaniWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
-  # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
+  # Change to `ip: {0,  0, 0}` to allow access from other machines.
   http: [ip: {127, 0, 0, 1}],
   check_origin: false,
   code_reloader: true,
@@ -89,6 +89,16 @@ config :phoenix_live_view,
   debug_attributes: true,
   # Enable helpful, but potentially expensive runtime checks
   enable_expensive_runtime_checks: true
+
+# ==================== REDIS CONFIGURATION ====================
+# Redis connection for development (read receipts, caching)
+config :redix, :dev,
+  name: :redix,
+  host: "localhost",
+  port: 6379,
+  pool_size: 10,
+  sync_connect: true
+# ==================== END REDIS CONFIGURATION ====================
 
 # Disable swoosh api client as it is only required for production adapters.
 # config :swoosh, :api_client, false

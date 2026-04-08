@@ -86,6 +86,14 @@ config :phoenix, :json_library, Jason
 # Groq API Key (loaded from .env or environment variable)
 config :mtaani, :groq_api_key, System.get_env("GROQ_API_KEY")
 
+# ==================== REDIS CONFIGURATION ====================
+# Redis Configuration for read receipts and caching
+config :mtaani, :redis,
+  host: System.get_env("REDIS_HOST") || "localhost",
+  port: String.to_integer(System.get_env("REDIS_PORT") || "6379")
+
+# ==================== END REDIS CONFIGURATION ====================
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"
