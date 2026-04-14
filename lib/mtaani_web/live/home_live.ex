@@ -484,6 +484,24 @@ defmodule MtaaniWeb.HomeLive do
     ~H"""
     <div class="h-full flex flex-col bg-gradient-to-b from-onyx/5 to-white">
       
+    <!-- Create Post Button (MOVED TO TOP) -->
+      <div class="bg-white rounded-xl shadow-sm p-3 mx-4 mt-1 mb-1 border border-onyx-mauve/10">
+        <div class="flex gap-3">
+          <div class="w-10 h-10 rounded-full bg-verdant-forest/20 flex items-center justify-center">
+            <span class="text-verdant-forest font-semibold">
+              {String.slice(@current_user.name, 0..0)}
+            </span>
+          </div>
+          
+          <button
+            phx-click="show_new_post_modal"
+            class="flex-1 text-left px-4 py-2 rounded-full bg-gray-100 text-onyx-mauve hover:bg-gray-200 transition-colors"
+          >
+            What's on your mind, {@current_user.name}?
+          </button>
+        </div>
+      </div>
+      
     <!-- Stories Bar -->
       <div class="stories-container overflow-x-auto px-4 py-3 border-b border-onyx-mauve/10">
         <div class="flex gap-3">
@@ -514,24 +532,6 @@ defmodule MtaaniWeb.HomeLive do
     <!-- Main Feed with Pull-to-Refresh -->
       <div id="feed-scroll" phx-hook="PullToRefresh" class="flex-1 overflow-y-auto custom-scrollbar">
         
-    <!-- Create Post Button -->
-        <div class="bg-white rounded-xl shadow-sm p-4 m-4 border border-onyx-mauve/10">
-          <div class="flex gap-3">
-            <div class="w-10 h-10 rounded-full bg-verdant-forest/20 flex items-center justify-center">
-              <span class="text-verdant-forest font-semibold">
-                {String.slice(@current_user.name, 0..0)}
-              </span>
-            </div>
-            
-            <button
-              phx-click="show_new_post_modal"
-              class="flex-1 text-left px-4 py-2 rounded-full bg-gray-100 text-onyx-mauve hover:bg-gray-200 transition-colors"
-            >
-              What's on your mind, {@current_user.name}?
-            </button>
-          </div>
-        </div>
-        
     <!-- Tab Navigation (X-style) -->
         <div class="px-4 pt-2 border-b border-onyx-mauve/10">
           <div class="flex justify-around">
@@ -546,11 +546,10 @@ defmodule MtaaniWeb.HomeLive do
               ]}
             >
               For You
-              <span
-                :if={@feed_tab == "for_you"}
-                class="absolute bottom-0 left-0 right-0 h-0.5 bg-verdant-forest rounded-full animate-slide-underline"
-              >
-              </span>
+              <%= if @feed_tab == "for_you" do %>
+                <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-verdant-forest rounded-full animate-slide-underline">
+                </span>
+              <% end %>
             </button>
             
     <!-- Near Me Tab -->
@@ -589,11 +588,10 @@ defmodule MtaaniWeb.HomeLive do
                 />
               </svg>
               Trending
-              <span
-                :if={@feed_tab == "trending"}
-                class="absolute bottom-0 left-0 right-0 h-0.5 bg-verdant-forest rounded-full animate-slide-underline"
-              >
-              </span>
+              <%= if @feed_tab == "trending" do %>
+                <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-verdant-forest rounded-full animate-slide-underline">
+                </span>
+              <% end %>
             </button>
           </div>
         </div>
