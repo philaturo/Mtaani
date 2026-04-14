@@ -28,6 +28,28 @@ defmodule MtaaniWeb.HomeLive do
       |> assign(:show_new_post_modal, false)
       |> assign(:stories, [])
       |> assign(:typing_users, [])
+      |> assign(:feed_tab, "for_you")
+      |> assign(:selected_tag, nil)
+      |> assign(:show_more_tags_modal, false)
+      |> assign(:tags, [
+        %{name: "hiking", display: "#Hiking"},
+        %{name: "coast", display: "#Coast"},
+        %{name: "sgr_updates", display: "#SGR_Updates"},
+        %{name: "hidden_gems", display: "#HiddenGems"},
+        %{name: "traffic", display: "#Traffic"},
+        %{name: "budget", display: "#Budget"},
+        %{name: "group_joins", display: "#GroupJoins"}
+      ])
+      |> assign(:more_tags, [
+        %{name: "wildlife", display: "#Wildlife"},
+        %{name: "nightlife", display: "#Nightlife"},
+        %{name: "shopping", display: "#Shopping"},
+        %{name: "accommodation", display: "#Accommodation"},
+        %{name: "restaurants", display: "#Restaurants"},
+        %{name: "events", display: "#Events"},
+        %{name: "transport", display: "#Transport"},
+        %{name: "safety", display: "#Safety"}
+      ])
 
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Mtaani.PubSub, "feed_updates")
@@ -403,6 +425,60 @@ defmodule MtaaniWeb.HomeLive do
     {:noreply, assign(socket, :typing_users, Enum.reject(current_typing, &(&1.id == user.id)))}
   end
 
+  #
+  @impl true
+  def handle_event("set_feed_tab", %{"tab" => tab}, socket) do
+    posts = load_feed_posts(tab, socket.assigns.user_location)
+    {:noreply, assign(socket, feed_tab: tab, posts: posts, selected_tag: nil)}
+  end
+
+  @impl true
+  def handle_event("filter_by_tag", %{"tag" => tag}, socket) do
+    posts = load_feed_posts_by_tag(tag)
+    {:noreply, assign(socket, selected_tag: tag, posts: posts, feed_tab: nil)}
+  end
+
+  @impl true
+  def handle_event("show_more_tags", _, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("close_more_tags", _, socket) do
+    {:noreply, assign(socket, :show_more_tags_modal, false)}
+  end
+
+  defp load_feed_posts(tab \\ "for_you", location \\ nil) do
+    base_query = from(post in Post, order_by: [desc: post.inserted_at], preload: [:user])
+
+    query =
+      case tab do
+        "near_me" when not is_nil(location) ->
+          base_query
+
+        "trending" ->
+          from(post in base_query,
+            order_by: [desc: post.likes_count + post.comments_count + post.reposts_count]
+          )
+
+        _ ->
+          base_query
+      end
+
+    Mtaani.Repo.all(query) |> Enum.take(20)
+  end
+
+  defp load_feed_posts_by_tag(tag) do
+    query =
+      from(post in Post,
+        where: like(post.content, ^"%##{tag}%"),
+        order_by: [desc: post.inserted_at],
+        preload: [:user]
+      )
+
+    Mtaani.Repo.all(query)
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -454,33 +530,145 @@ defmodule MtaaniWeb.HomeLive do
               What's on your mind, {@current_user.name}?
             </button>
           </div>
-          
-          <div class="flex justify-around mt-3 pt-3 border-t border-gray-100">
-            <button class="flex items-center gap-2 text-sm text-onyx-mauve hover:text-verdant-forest transition-colors">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-               <span>Photo</span>
+        </div>
+        
+    <!-- Tab Navigation (X-style) -->
+        <div class="px-4 pt-2 border-b border-onyx-mauve/10">
+          <div class="flex justify-around">
+            <!-- For You Tab -->
+            <button
+              phx-click="set_feed_tab"
+              phx-value-tab="for_you"
+              class={[
+                "relative py-2 text-sm font-medium transition-all duration-200",
+                @feed_tab == "for_you" && "text-verdant-forest",
+                @feed_tab != "for_you" && "text-onyx-mauve hover:text-onyx-deep"
+              ]}
+            >
+              For You
+              <span
+                :if={@feed_tab == "for_you"}
+                class="absolute bottom-0 left-0 right-0 h-0.5 bg-verdant-forest rounded-full animate-slide-underline"
+              >
+              </span>
             </button>
             
-            <button class="flex items-center gap-2 text-sm text-onyx-mauve hover:text-verdant-forest transition-colors">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <!-- Near Me Tab -->
+            <button
+              phx-click="set_feed_tab"
+              phx-value-tab="near_me"
+              class={[
+                "relative py-2 text-sm font-medium transition-all duration-200",
+                @feed_tab == "near_me" && "text-verdant-forest",
+                @feed_tab != "near_me" && "text-onyx-mauve hover:text-onyx-deep"
+              ]}
+            >
+              Near Me
+              <%= if @feed_tab == "near_me" do %>
+                <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-verdant-forest rounded-full animate-slide-underline">
+                </span>
+              <% end %>
+            </button>
+            
+    <!-- Trending Tab -->
+            <button
+              phx-click="set_feed_tab"
+              phx-value-tab="trending"
+              class={[
+                "relative py-2 text-sm font-medium transition-all duration-200 flex items-center gap-1",
+                @feed_tab == "trending" && "text-verdant-forest",
+                @feed_tab != "trending" && "text-onyx-mauve hover:text-onyx-deep"
+              ]}
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  stroke-width="1.5"
+                  d="M15.5 6.5a3.5 3.5 0 00-7 0v10a3.5 3.5 0 107 0V6.5z"
                 />
               </svg>
-               <span>Feeling</span>
+              Trending
+              <span
+                :if={@feed_tab == "trending"}
+                class="absolute bottom-0 left-0 right-0 h-0.5 bg-verdant-forest rounded-full animate-slide-underline"
+              >
+              </span>
             </button>
           </div>
         </div>
+        
+    <!-- Horizontal Scroll Tags (Dev.to style) -->
+        <div class="px-4 py-3 overflow-x-auto scrollbar-hide">
+          <div class="flex gap-2 min-w-max">
+            <%= for tag <- @tags do %>
+              <button
+                phx-click="filter_by_tag"
+                phx-value-tag={tag.name}
+                class={[
+                  "px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap",
+                  @selected_tag == tag.name && "bg-verdant-forest text-white",
+                  @selected_tag != tag.name &&
+                    "bg-onyx-mauve/10 text-onyx-deep hover:bg-onyx-mauve/20"
+                ]}
+              >
+                {tag.display}
+              </button>
+            <% end %>
+            
+    <!-- More Tags Button -->
+            <button
+              phx-click="show_more_tags"
+              class="px-3 py-1.5 rounded-full text-sm font-medium bg-onyx-mauve/10 text-onyx-deep hover:bg-onyx-mauve/20 transition-all duration-200 whitespace-nowrap"
+            >
+              + More
+            </button>
+          </div>
+        </div>
+        
+    <!-- More Tags Modal -->
+        <%= if @show_more_tags_modal do %>
+          <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl max-w-md w-full max-h-[80vh] overflow-hidden shadow-2xl">
+              <div class="p-4 border-b flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-onyx-deep">More Tags</h3>
+                
+                <button
+                  phx-click="close_more_tags"
+                  class="text-onyx-mauve hover:text-onyx-deep transition-colors"
+                >
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+              
+              <div class="p-4 overflow-y-auto max-h-[60vh]">
+                <div class="flex flex-wrap gap-2">
+                  <%= for tag <- @more_tags do %>
+                    <button
+                      phx-click="filter_by_tag"
+                      phx-value-tag={tag.name}
+                      class={[
+                        "px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200",
+                        @selected_tag == tag.name && "bg-verdant-forest text-white",
+                        @selected_tag != tag.name &&
+                          "bg-onyx-mauve/10 text-onyx-deep hover:bg-onyx-mauve/20"
+                      ]}
+                    >
+                      {tag.display}
+                    </button>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
         
     <!-- Feed Container -->
         <div id="feed-container" phx-hook="FeedAnimations" class="space-y-4 px-4 pb-20">
@@ -891,8 +1079,7 @@ defmodule MtaaniWeb.HomeLive do
               class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
             >
               <div class="bg-white rounded-xl max-w-md w-full modal-content">
-                
-    <!-- Modal Header -->
+                <!-- Modal Header -->
                 <div class="p-4 border-b flex justify-between items-center">
                   <h3 class="text-lg font-semibold">Create Post</h3>
                   
