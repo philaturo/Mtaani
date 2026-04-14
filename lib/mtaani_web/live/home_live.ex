@@ -762,6 +762,7 @@ defmodule MtaaniWeb.HomeLive do
                   </button>
                   
     <!-- Repost Button -->
+                  <!-- Repost Button -->
                   <button class="flex flex-col items-center gap-1 text-onyx-mauve hover:text-verdant-sage transition-colors group">
                     <svg
                       class="w-5 h-5 group-hover:scale-110 transition-transform"
@@ -773,7 +774,7 @@ defmodule MtaaniWeb.HomeLive do
                         stroke-linecap="round"
                         stroke-linejoin="round"
                         stroke-width="1.5"
-                        d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                        d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
                       />
                     </svg>
                      <span class="text-xs">{post.reposts_count || 0}</span>
@@ -803,7 +804,7 @@ defmodule MtaaniWeb.HomeLive do
                      <span class="like-count text-xs">{post.likes_count || 0}</span>
                   </button>
                   
-    <!-- Share Button -->
+    <!-- Share Button (external sharing) -->
                   <button class="flex flex-col items-center gap-1 text-onyx-mauve hover:text-verdant-forest transition-colors group">
                     <svg
                       class="w-5 h-5 group-hover:scale-110 transition-transform"
@@ -821,7 +822,7 @@ defmodule MtaaniWeb.HomeLive do
                      <span class="text-xs">Share</span>
                   </button>
                   
-    <!-- Bookmark Button -->
+    <!-- Bookmark/Save Button -->
                   <button class="flex flex-col items-center gap-1 text-onyx-mauve hover:text-verdant-forest transition-colors group">
                     <svg
                       class="w-5 h-5 group-hover:scale-110 transition-transform"
