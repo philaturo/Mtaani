@@ -17,6 +17,12 @@ import LikeAnimation from "./hooks/like_animation";
 import ScrollToTop from "./hooks/scroll_to_top";
 import SwipeToReply from "./hooks/swipe_to_reply";
 import ContextMenu from "./hooks/context_menu";
+import SwipeToDelete from "./hooks/swipe_to_delete";
+import MessageReaction from "./hooks/message_reaction";
+import StoriesViewer from "./hooks/stories_viewer";
+import SharePost from "./hooks/share_post";
+import PinchZoom from "./hooks/pinch_zoom";
+import VoiceRecorder from "./hooks/voice_recorder";
 
 // Get CSRF token from meta tag
 let csrfToken = document
@@ -45,7 +51,12 @@ let liveSocket = new LiveSocket("/live", Socket, {
     ScrollToTop: ScrollToTop,
     SwipeToReply: SwipeToReply,
     ContextMenu: ContextMenu,
-}
+    SwipeToDelete: SwipeToDelete,
+    MessageReaction: MessageReaction,
+    StoriesViewer: StoriesViewer,
+    SharePost: SharePost,
+    PinchZoom: PinchZoom,
+    VoiceRecorder: VoiceRecorder,
 
     // Geolocation hook
     Geolocation: {
