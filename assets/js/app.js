@@ -14,6 +14,8 @@ import TypingIndicator from "./hooks/typing_indicator";
 import MessageObserver from "./hooks/message_observer";
 import DoubleTapLike from "./hooks/double_tap_like";
 import LikeAnimation from "./hooks/like_animation";
+import ScrollToTop from "./hooks/scroll_to_top";
+import SwipeToReply from "./hooks/swipe_to_reply";
 
 // Get CSRF token from meta tag
 let csrfToken = document
@@ -39,6 +41,8 @@ let liveSocket = new LiveSocket("/live", Socket, {
     ChatToggle: ChatToggle,
     DoubleTapLike: DoubleTapLike,
     LikeAnimation: LikeAnimation,
+    ScrollToTop: ScrollToTop,
+    SwipeToReply: SwipeToReply,
 
     // Geolocation hook
     Geolocation: {
