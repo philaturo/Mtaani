@@ -1,6 +1,7 @@
 const DoubleTapLike = {
   mounted() {
     this.lastTap = 0;
+    this.postId = this.el.dataset.postId;
 
     this.el.addEventListener("touchstart", (e) => {
       const currentTime = new Date().getTime();
@@ -9,9 +10,7 @@ const DoubleTapLike = {
       if (tapLength < 300 && tapLength > 0) {
         e.preventDefault();
         e.stopPropagation();
-        // Find the like button in the parent post container
-        const postContainer = this.el.closest(".feed-post");
-        const likeButton = postContainer?.querySelector(".like-button");
+        const likeButton = document.getElementById(`like-btn-${this.postId}`);
         if (likeButton) {
           likeButton.click();
         }
@@ -22,8 +21,7 @@ const DoubleTapLike = {
 
     this.el.addEventListener("dblclick", (e) => {
       e.preventDefault();
-      const postContainer = this.el.closest(".feed-post");
-      const likeButton = postContainer?.querySelector(".like-button");
+      const likeButton = document.getElementById(`like-btn-${this.postId}`);
       if (likeButton) {
         likeButton.click();
       }
