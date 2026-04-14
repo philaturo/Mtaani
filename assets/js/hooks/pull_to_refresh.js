@@ -4,76 +4,110 @@ const PullToRefresh = {
     this.currentY = 0;
     this.refreshing = false;
     this.refreshThreshold = 80;
+    this.maxPullDistance = 120;
     this.pullDistance = 0;
+    this.tension = 0.4;
+    this.isPulling = false;
 
-    // Create refresh indicator element
     this.createRefreshIndicator();
 
-    // Touch event listeners
     this.el.addEventListener("touchstart", this.handleTouchStart.bind(this));
     this.el.addEventListener("touchmove", this.handleTouchMove.bind(this));
     this.el.addEventListener("touchend", this.handleTouchEnd.bind(this));
   },
 
   createRefreshIndicator() {
+    // Create a wrapper div that sits above the content
+    this.wrapper = document.createElement("div");
+    this.wrapper.className = "ptr-wrapper";
+    this.wrapper.style.position = "relative";
+    this.wrapper.style.overflow = "hidden";
+
+    // Move all children into wrapper
+    while (this.el.firstChild) {
+      this.wrapper.appendChild(this.el.firstChild);
+    }
+    this.el.appendChild(this.wrapper);
+
+    // Create indicator
     this.indicator = document.createElement("div");
     this.indicator.className = "pull-to-refresh-indicator";
     this.indicator.innerHTML = `
-      <div class="refresh-spinner hidden">
-        <svg class="animate-spin w-6 h-6 text-verdant-forest" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-      </div>
-      <div class="refresh-text text-sm text-onyx-mauve">Pull to refresh</div>
-    `;
-    this.el.insertBefore(this.indicator, this.el.firstChild);
+  <div class="ptr-progress">
+    <svg class="ptr-spinner" viewBox="0 0 24 24" width="24" height="24" style="color: #2E6B46">
+      <circle cx="12" cy="12" r="10" fill="none" stroke="#2E6B46" stroke-width="2" stroke-dasharray="62.8" stroke-dashoffset="15"/>
+    </svg>
+    <div class="ptr-arrow" style="color: #2E6B46">↓</div>
+  </div>
+  <div class="ptr-text">Pull to refresh</div>
+`;
+
+    this.wrapper.insertBefore(this.indicator, this.wrapper.firstChild);
+
+    this.spinner = this.indicator.querySelector(".ptr-spinner");
+    this.arrow = this.indicator.querySelector(".ptr-arrow");
+    this.textEl = this.indicator.querySelector(".ptr-text");
+
+    // Set initial hidden state
+    this.indicator.style.transform = "translateY(-60px)";
+    this.indicator.style.transition = "transform 0.2s ease-out";
   },
 
   handleTouchStart(e) {
     if (this.refreshing) return;
-    if (this.el.scrollTop === 0) {
+    // Check if scrolled to top
+    if (this.wrapper.scrollTop === 0) {
       this.startY = e.touches[0].clientY;
+      this.isPulling = true;
       this.pullDistance = 0;
     }
   },
 
   handleTouchMove(e) {
-    if (this.refreshing) return;
-    if (this.el.scrollTop === 0 && this.startY > 0) {
-      this.currentY = e.touches[0].clientY;
-      this.pullDistance = this.currentY - this.startY;
+    if (this.refreshing || !this.isPulling) return;
 
-      if (this.pullDistance > 0) {
-        e.preventDefault();
-        const translateY = Math.min(this.pullDistance, this.refreshThreshold);
-        this.el.style.transform = `translateY(${translateY}px)`;
-        this.el.style.transition = "none";
+    this.currentY = e.touches[0].clientY;
+    let rawDistance = this.currentY - this.startY;
 
-        // Update indicator text
-        const textEl = this.indicator.querySelector(".refresh-text");
-        if (this.pullDistance >= this.refreshThreshold) {
-          textEl.textContent = "Release to refresh";
-        } else {
-          textEl.textContent = "Pull to refresh";
-        }
+    if (rawDistance > 0 && this.wrapper.scrollTop === 0) {
+      e.preventDefault();
 
-        // Show spinner on threshold
-        const spinner = this.indicator.querySelector(".refresh-spinner");
-        if (this.pullDistance >= this.refreshThreshold) {
-          spinner.classList.remove("hidden");
-        } else {
-          spinner.classList.add("hidden");
-        }
+      // Apply tension - the further you pull, the more resistance
+      this.pullDistance = Math.pow(rawDistance, 0.8);
+      this.pullDistance = Math.min(this.pullDistance, this.maxPullDistance);
+
+      const progress = Math.min(this.pullDistance / this.refreshThreshold, 1);
+
+      // Move the indicator down
+      const translateY = Math.min(this.pullDistance, this.refreshThreshold);
+      this.indicator.style.transform = `translateY(${translateY}px)`;
+
+      // Rotate arrow based on progress
+      const rotation = progress * 180;
+      this.arrow.style.transform = `rotate(${rotation}deg)`;
+
+      // Update text
+      if (this.pullDistance >= this.refreshThreshold) {
+        this.textEl.textContent = "Release to refresh";
+        this.spinner.classList.add("ptr-spinning");
+        this.arrow.style.opacity = "0";
+        this.spinner.style.opacity = "1";
+      } else {
+        this.textEl.textContent = "Pull to refresh";
+        this.spinner.classList.remove("ptr-spinning");
+        this.arrow.style.opacity = "1";
+        this.spinner.style.opacity = "0";
       }
     }
   },
 
   handleTouchEnd(e) {
-    if (this.refreshing) return;
+    if (this.refreshing || !this.isPulling) return;
 
-    this.el.style.transform = "translateY(0px)";
-    this.el.style.transition = "transform 0.3s ease-out";
+    this.isPulling = false;
+    this.indicator.style.transition =
+      "transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1)";
+    this.indicator.style.transform = "translateY(-60px)";
 
     if (this.pullDistance >= this.refreshThreshold) {
       this.refresh();
@@ -81,39 +115,44 @@ const PullToRefresh = {
 
     this.startY = 0;
     this.pullDistance = 0;
-
-    // Reset indicator
-    const textEl = this.indicator.querySelector(".refresh-text");
-    textEl.textContent = "Pull to refresh";
-    const spinner = this.indicator.querySelector(".refresh-spinner");
-    spinner.classList.add("hidden");
   },
 
   refresh() {
     this.refreshing = true;
 
     // Show refreshing state
-    const textEl = this.indicator.querySelector(".refresh-text");
-    textEl.textContent = "Refreshing...";
-    const spinner = this.indicator.querySelector(".refresh-spinner");
-    spinner.classList.remove("hidden");
+    this.indicator.style.transform = "translateY(0px)";
+    this.textEl.textContent = "Refreshing...";
+    this.spinner.classList.add("ptr-spinning");
+    this.spinner.style.opacity = "1";
+    this.arrow.style.opacity = "0";
 
-    // Trigger refresh event to LiveView
-    this.pushEventTo(this.el, "refresh_feed", {}, (reply) => {
-      this.refreshing = false;
-      textEl.textContent = "Updated!";
-      spinner.classList.add("hidden");
+    // Haptic feedback
+    if (window.navigator && window.navigator.vibrate) {
+      window.navigator.vibrate(20);
+    }
 
+    // Trigger refresh event
+    this.pushEventTo(this.el, "refresh_feed", {}, () => {
       setTimeout(() => {
-        if (textEl) textEl.textContent = "Pull to refresh";
-      }, 1000);
+        this.refreshing = false;
+        this.textEl.textContent = "Updated!";
+
+        setTimeout(() => {
+          this.indicator.style.transform = "translateY(-60px)";
+          setTimeout(() => {
+            this.spinner.classList.remove("ptr-spinning");
+            this.arrow.style.opacity = "1";
+            this.spinner.style.opacity = "0";
+            this.textEl.textContent = "Pull to refresh";
+          }, 300);
+        }, 500);
+      }, 500);
     });
   },
 
   destroyed() {
-    if (this.indicator) {
-      this.indicator.remove();
-    }
+    // Clean up
   },
 };
 
