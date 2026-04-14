@@ -188,7 +188,6 @@ defmodule MtaaniWeb.HomeLive do
         user: socket.assigns.current_user,
         inserted_at: DateTime.utc_now(),
         pending: true,
-        # ADD THIS LINE
         failed: false
       }
 
@@ -640,19 +639,20 @@ defmodule MtaaniWeb.HomeLive do
             
     <!-- Real Posts -->
             <%= for post <- @posts do %>
+              <!-- Context Menu Wrapper -->
               <div
-                id={"post-container-#{post.id}"}
+                id={"context-menu-#{post.id}"}
                 phx-hook="ContextMenu"
                 data-post-id={post.id}
                 data-is-own-post={post.user_id == @current_user_id}
-                class="feed-post bg-white rounded-xl shadow-sm border border-onyx-mauve/10 overflow-hidden"
+                class="w-full"
               >
-                <!-- Double-tap area (header + content only) -->
+                <!-- Double Tap Container -->
                 <div
-                  id={"double-tap-#{post.id}"}
+                  id={"post-doubletap-#{post.id}"}
                   phx-hook="DoubleTapLike"
                   data-post-id={post.id}
-                  class="double-tap-area"
+                  class="feed-post bg-white rounded-xl shadow-sm border border-onyx-mauve/10 overflow-hidden"
                 >
                   <!-- Post Header -->
                   <div class="p-4 flex items-center justify-between">
@@ -688,250 +688,252 @@ defmodule MtaaniWeb.HomeLive do
                   <div class="post-content px-4 pb-3">
                     <p class="text-onyx-deep">{post.content}</p>
                   </div>
-                </div>
-                
+                  
     <!-- Reaction Bar -->
-                <div class="px-4 py-1 flex flex-wrap gap-2">
-                  <%= for emoji <- ["❤️", "👍", "😂", "😮", "😢", "🙏"] do %>
-                    <% count = Map.get(get_reaction_counts(post.id), emoji, 0) %>
-                    <button
-                      phx-click="add_reaction"
-                      phx-value-type="post"
-                      phx-value-id={post.id}
-                      phx-value-emoji={emoji}
-                      class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm hover:bg-onyx-mauve/10 dark:hover:bg-white/10 transition-colors"
-                    >
-                      <span class="text-base">{emoji}</span>
-                      <%= if count > 0 do %>
-                        <span class="text-xs text-onyx-mauve dark:text-gray-400">{count}</span>
-                      <% end %>
-                    </button>
-                  <% end %>
-                </div>
-                
-    <!-- Comment Section (hidden initially) -->
-                <div id={"comment-section-#{post.id}"} class="hidden comment-section">
-                  <div class="px-4 pb-3">
-                    <div class="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Write a comment..."
-                        class="flex-1 px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 focus:outline-none focus:ring-1 focus:ring-verdant-forest"
-                      />
-                      <button class="send-comment bg-verdant-forest text-white rounded-full px-4 py-2 text-sm hover:bg-verdant-deep transition-colors">
-                        Post
+                  <div class="px-4 py-1 flex flex-wrap gap-2">
+                    <%= for emoji <- ["❤️", "👍", "😂", "😮", "😢", "🙏"] do %>
+                      <% count = Map.get(get_reaction_counts(post.id), emoji, 0) %>
+                      <button
+                        phx-click="add_reaction"
+                        phx-value-type="post"
+                        phx-value-id={post.id}
+                        phx-value-emoji={emoji}
+                        class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm hover:bg-onyx-mauve/10 dark:hover:bg-white/10 transition-colors"
+                      >
+                        <span class="text-base">{emoji}</span>
+                        <%= if count > 0 do %>
+                          <span class="text-xs text-onyx-mauve dark:text-gray-400">{count}</span>
+                        <% end %>
                       </button>
+                    <% end %>
+                  </div>
+                  
+    <!-- Comment Section (hidden initially) -->
+                  <div id={"comment-section-#{post.id}"} class="hidden comment-section">
+                    <div class="px-4 pb-3">
+                      <div class="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Write a comment..."
+                          class="flex-1 px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 focus:outline-none focus:ring-1 focus:ring-verdant-forest"
+                        />
+                        <button class="send-comment bg-verdant-forest text-white rounded-full px-4 py-2 text-sm hover:bg-verdant-deep transition-colors">
+                          Post
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-                
+                  
     <!-- Typing Indicator -->
-                <%= if @typing_users != [] do %>
-                  <div class="px-4 py-2">
-                    <div class="flex items-center gap-2">
-                      <div class="flex -space-x-1">
-                        <%= for typing_user <- Enum.take(@typing_users, 3) do %>
-                          <div class="w-6 h-6 rounded-full bg-verdant-forest/20 flex items-center justify-center text-xs">
-                            {String.slice(typing_user.name, 0..0)}
-                          </div>
-                        <% end %>
-                      </div>
-                      
-                      <p class="text-sm text-onyx-mauve">
-                        <%= if length(@typing_users) == 1 do %>
-                          {List.first(@typing_users).name} is typing
-                        <% else %>
-                          {length(@typing_users)} people are typing
-                        <% end %>
-                      </p>
-                      
-                      <div class="flex gap-0.5">
-                        <span
-                          class="w-1 h-1 bg-verdant-forest rounded-full animate-bounce"
-                          style="animation-delay: 0s"
-                        >
-                        </span>
-                        <span
-                          class="w-1 h-1 bg-verdant-forest rounded-full animate-bounce"
-                          style="animation-delay: 0.2s"
-                        >
-                        </span>
-                        <span
-                          class="w-1 h-1 bg-verdant-forest rounded-full animate-bounce"
-                          style="animation-delay: 0.4s"
-                        >
-                        </span>
+                  <%= if @typing_users != [] do %>
+                    <div class="px-4 py-2">
+                      <div class="flex items-center gap-2">
+                        <div class="flex -space-x-1">
+                          <%= for typing_user <- Enum.take(@typing_users, 3) do %>
+                            <div class="w-6 h-6 rounded-full bg-verdant-forest/20 flex items-center justify-center text-xs">
+                              {String.slice(typing_user.name, 0..0)}
+                            </div>
+                          <% end %>
+                        </div>
+                        
+                        <p class="text-sm text-onyx-mauve">
+                          <%= if length(@typing_users) == 1 do %>
+                            {List.first(@typing_users).name} is typing
+                          <% else %>
+                            {length(@typing_users)} people are typing
+                          <% end %>
+                        </p>
+                        
+                        <div class="flex gap-0.5">
+                          <span
+                            class="w-1 h-1 bg-verdant-forest rounded-full animate-bounce"
+                            style="animation-delay: 0s"
+                          >
+                          </span>
+                          <span
+                            class="w-1 h-1 bg-verdant-forest rounded-full animate-bounce"
+                            style="animation-delay: 0.2s"
+                          >
+                          </span>
+                          <span
+                            class="w-1 h-1 bg-verdant-forest rounded-full animate-bounce"
+                            style="animation-delay: 0.4s"
+                          >
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                <% end %>
-                
+                  <% end %>
+                  
     <!-- Action Buttons -->
-                <div class="px-4 py-2 flex justify-evenly items-center">
-                  <!-- Comment Button -->
-                  <button
-                    class="comment-button flex flex-col items-center gap-1 text-onyx-mauve hover:text-verdant-forest transition-colors group"
-                    data-post-id={post.id}
-                  >
-                    <svg
-                      class="w-5 h-5 group-hover:scale-110 transition-transform"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                  <div class="px-4 py-2 flex justify-evenly items-center">
+                    <!-- Comment Button -->
+                    <button
+                      class="comment-button flex flex-col items-center gap-1 text-onyx-mauve hover:text-verdant-forest transition-colors group"
+                      data-post-id={post.id}
                     >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                      />
-                    </svg>
-                     <span class="text-xs">{post.comments_count || 0}</span>
-                  </button>
-                  
+                      <svg
+                        class="w-5 h-5 group-hover:scale-110 transition-transform"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="1.5"
+                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                        />
+                      </svg>
+                       <span class="text-xs">{post.comments_count || 0}</span>
+                    </button>
+                    
     <!-- Repost Button -->
-                  <!-- Repost Button -->
-                  <button class="flex flex-col items-center gap-1 text-onyx-mauve hover:text-verdant-sage transition-colors group">
-                    <svg
-                      class="w-5 h-5 group-hover:scale-110 transition-transform"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                        d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                      />
-                    </svg>
-                     <span class="text-xs">{post.reposts_count || 0}</span>
-                  </button>
-                  
+                    <button class="flex flex-col items-center gap-1 text-onyx-mauve hover:text-verdant-sage transition-colors group">
+                      <svg
+                        class="w-5 h-5 group-hover:scale-110 transition-transform"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="1.5"
+                          d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+                        />
+                      </svg>
+                       <span class="text-xs">{post.reposts_count || 0}</span>
+                    </button>
+                    
     <!-- Like Button -->
-                  <button
-                    id={"like-btn-#{post.id}"}
-                    phx-click="like_post"
-                    phx-value-post_id={post.id}
-                    class="like-button flex flex-col items-center gap-1 text-onyx-mauve transition-colors group"
-                    phx-hook="LikeAnimation"
-                  >
-                    <svg
-                      class="w-5 h-5 group-hover:scale-110 transition-transform group-hover:text-red-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                    <button
+                      id={"like-btn-#{post.id}"}
+                      phx-click="like_post"
+                      phx-value-post_id={post.id}
+                      class="like-button flex flex-col items-center gap-1 text-onyx-mauve transition-colors group"
+                      phx-hook="LikeAnimation"
                     >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                      />
-                    </svg>
-                     <span class="like-count text-xs">{post.likes_count || 0}</span>
-                  </button>
-                  
-    <!-- Share Button (external sharing) -->
-                  <button class="flex flex-col items-center gap-1 text-onyx-mauve hover:text-verdant-forest transition-colors group">
-                    <svg
-                      class="w-5 h-5 group-hover:scale-110 transition-transform"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                        d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15M9 12l3 3m0 0l3-3m-3 3V2.25"
-                      />
-                    </svg>
-                     <span class="text-xs">Share</span>
-                  </button>
-                  
-    <!-- Bookmark/Save Button -->
-                  <button class="flex flex-col items-center gap-1 text-onyx-mauve hover:text-verdant-forest transition-colors group">
-                    <svg
-                      class="w-5 h-5 group-hover:scale-110 transition-transform"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                        d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"
-                      />
-                    </svg>
-                     <span class="text-xs">Save</span>
-                  </button>
+                      <svg
+                        class="w-5 h-5 group-hover:scale-110 transition-transform group-hover:text-red-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="1.5"
+                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                        />
+                      </svg>
+                       <span class="like-count text-xs">{post.likes_count || 0}</span>
+                    </button>
+                    
+    <!-- Share Button -->
+                    <button class="flex flex-col items-center gap-1 text-onyx-mauve hover:text-verdant-forest transition-colors group">
+                      <svg
+                        class="w-5 h-5 group-hover:scale-110 transition-transform"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="1.5"
+                          d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15M9 12l3 3m0 0l3-3m-3 3V2.25"
+                        />
+                      </svg>
+                       <span class="text-xs">Share</span>
+                    </button>
+                    
+    <!-- Save Button -->
+                    <button class="flex flex-col items-center gap-1 text-onyx-mauve hover:text-verdant-forest transition-colors group">
+                      <svg
+                        class="w-5 h-5 group-hover:scale-110 transition-transform"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="1.5"
+                          d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"
+                        />
+                      </svg>
+                       <span class="text-xs">Save</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             <% end %>
-          <% end %>
-        </div>
-      </div>
-      
+            
     <!-- Floating Chat Button -->
-      <div id="chat-toggle" phx-hook="ChatToggle" class="fixed bottom-20 right-4 z-50">
-        <button class="bg-verdant-forest text-white p-4 rounded-full shadow-lg hover:bg-verdant-deep transition-all hover:scale-110">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-            />
-          </svg>
-        </button>
-      </div>
-      
-    <!-- Create Post Modal -->
-      <div
-        :if={@show_new_post_modal}
-        id="new-post-modal"
-        class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-      >
-        <div class="bg-white rounded-xl max-w-md w-full modal-content">
-          
-    <!-- Modal Header -->
-          <div class="p-4 border-b flex justify-between items-center">
-            <h3 class="text-lg font-semibold">Create Post</h3>
-            
-            <button phx-click="close_new_post_modal" class="text-onyx-mauve hover:text-onyx-deep">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
-          
-    <!-- Form -->
-          <form phx-submit="create_post" phx-change="update_new_post">
-            <div class="p-4">
-              <textarea
-                name="content"
-                value={@new_post_content}
-                placeholder="What's on your mind?"
-                class="w-full h-32 p-3 border rounded-lg resize-none focus:outline-none focus:border-verdant-forest"
-              ><%= @new_post_content %></textarea>
-            </div>
-            
-            <div class="p-4 border-t flex justify-end">
-              <button
-                type="submit"
-                class="bg-verdant-forest text-white px-6 py-2 rounded-full hover:bg-verdant-deep transition-colors"
-              >
-                Post
+            <div id="chat-toggle" phx-hook="ChatToggle" class="fixed bottom-20 right-4 z-50">
+              <button class="bg-verdant-forest text-white p-4 rounded-full shadow-lg hover:bg-verdant-deep transition-all hover:scale-110">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
+                </svg>
               </button>
             </div>
-          </form>
+            
+    <!-- Create Post Modal -->
+            <div
+              :if={@show_new_post_modal}
+              id="new-post-modal"
+              class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            >
+              <div class="bg-white rounded-xl max-w-md w-full modal-content">
+                
+    <!-- Modal Header -->
+                <div class="p-4 border-b flex justify-between items-center">
+                  <h3 class="text-lg font-semibold">Create Post</h3>
+                  
+                  <button
+                    phx-click="close_new_post_modal"
+                    class="text-onyx-mauve hover:text-onyx-deep"
+                  >
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                
+    <!-- Form -->
+                <form phx-submit="create_post" phx-change="update_new_post">
+                  <div class="p-4">
+                    <textarea
+                      name="content"
+                      value={@new_post_content}
+                      placeholder="What's on your mind?"
+                      class="w-full h-32 p-3 border rounded-lg resize-none focus:outline-none focus:border-verdant-forest"
+                    ><%= @new_post_content %></textarea>
+                  </div>
+                  
+                  <div class="p-4 border-t flex justify-end">
+                    <button
+                      type="submit"
+                      class="bg-verdant-forest text-white px-6 py-2 rounded-full hover:bg-verdant-deep transition-colors"
+                    >
+                      Post
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          <% end %>
         </div>
       </div>
     </div>
