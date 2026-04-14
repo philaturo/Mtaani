@@ -761,3 +761,22 @@ body {
     opacity: 0;
   }
 }
+
+/* Tab Bar Double-Tap Animation */
+.tab-double-tap {
+  transform: scale(0.95);
+  transition: transform 0.1s ease;
+}
+
+/* Bottom Navigation Tab Styles */
+.bottom-nav-item {
+  transition:
+    transform 0.1s ease,
+    color 0.2s ease;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav-item:active {
+  transform: scale(0.95);
+}
