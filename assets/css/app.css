@@ -696,7 +696,7 @@ body {
   0% {
     transform: scale(1);
   }
-  50% {
+  40% {
     transform: scale(1.3);
   }
   100% {
@@ -740,13 +740,15 @@ body {
 }
 
 .like-particle {
-  position: absolute;
+  position: fixed;
   width: 6px;
   height: 6px;
-  background-color: #ff4d4d;
+  background: radial-gradient(circle, #ff4d4d, #ff9999);
   border-radius: 50%;
   pointer-events: none;
+  z-index: 1000;
   animation: particleFloat 0.5s ease-out forwards;
+  box-shadow: 0 0 4px rgba(255, 77, 77, 0.5);
 }
 
 @keyframes particleFloat {
