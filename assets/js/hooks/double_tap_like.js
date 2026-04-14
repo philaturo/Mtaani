@@ -8,8 +8,10 @@ const DoubleTapLike = {
 
       if (tapLength < 300 && tapLength > 0) {
         e.preventDefault();
-        // Find and click the like button instead of triggering event directly
-        const likeButton = this.el.querySelector(".like-button");
+        e.stopPropagation();
+        // Find the like button in the parent post container
+        const postContainer = this.el.closest(".feed-post");
+        const likeButton = postContainer?.querySelector(".like-button");
         if (likeButton) {
           likeButton.click();
         }
@@ -18,10 +20,10 @@ const DoubleTapLike = {
       this.lastTap = currentTime;
     });
 
-    // Also support mouse double-click for desktop
     this.el.addEventListener("dblclick", (e) => {
       e.preventDefault();
-      const likeButton = this.el.querySelector(".like-button");
+      const postContainer = this.el.closest(".feed-post");
+      const likeButton = postContainer?.querySelector(".like-button");
       if (likeButton) {
         likeButton.click();
       }
