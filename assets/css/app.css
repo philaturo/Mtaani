@@ -630,3 +630,91 @@ body {
 .bottom-nav-spacing {
   padding-bottom: calc(4rem + env(safe-area-inset-bottom));
 }
+/* Double-tap like burst animation */
+@keyframes likeBurst {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.like-burst {
+  animation: likeBurst 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+}
+
+/* Like button scale animation */
+@keyframes likeScale {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.like-scale {
+  animation: likeScale 0.2s ease-out;
+}
+
+/* Like button active color */
+.like-active {
+  fill: #ff4d4d;
+  stroke: #ff4d4d;
+  transition:
+    fill 0.1s ease,
+    stroke 0.1s ease;
+}
+
+/* Like count pop animation */
+@keyframes likeCountPop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.like-count-pop {
+  animation: likeCountPop 0.2s ease-out;
+}
+
+/* Heart particle effect container */
+.like-particle-container {
+  position: relative;
+}
+
+.like-particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background-color: #ff4d4d;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: particleFloat 0.5s ease-out forwards;
+}
+
+@keyframes particleFloat {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx, 20px), var(--ty, -30px)) scale(0);
+    opacity: 0;
+  }
+}
