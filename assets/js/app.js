@@ -12,6 +12,8 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import PullToRefresh from "./hooks/pull_to_refresh";
 import TypingIndicator from "./hooks/typing_indicator";
 import MessageObserver from "./hooks/message_observer";
+import DoubleTapLike from "./hooks/double_tap_like";
+import LikeAnimation from "./hooks/like_animation";
 
 // Get CSRF token from meta tag
 let csrfToken = document
@@ -35,6 +37,8 @@ let liveSocket = new LiveSocket("/live", Socket, {
     InfiniteScroll: InfiniteScroll,
     FeedAnimations: FeedAnimations,
     ChatToggle: ChatToggle,
+    DoubleTapLike: DoubleTapLike,
+    LikeAnimation: LikeAnimation,
 
     // Geolocation hook
     Geolocation: {
