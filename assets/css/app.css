@@ -879,3 +879,71 @@ body {
 .animate-slide-up {
   animation: slideUp 0.2s ease-out;
 }
+
+/* Reply Indicator */
+.reply-indicator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 60px;
+  background: #2e6b46;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: opacity 0.2s ease;
+  border-radius: 12px 0 0 12px;
+}
+
+/* Delete Indicator */
+.delete-indicator {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 80px;
+  background: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: white;
+  transition: opacity 0.2s ease;
+  border-radius: 0 12px 12px 0;
+}
+
+/* Message Reaction Picker */
+.message-reaction-picker button:hover {
+  transform: scale(1.2);
+  background: #f0f0f0;
+}
+
+/* Share Modal */
+.share-modal button:hover {
+  opacity: 0.9;
+}
+
+/* Zoom Modal */
+.zoom-modal {
+  cursor: pointer;
+}
+
+.zoom-image {
+  cursor: zoom-out;
+}
+
+/* Voice Recorder */
+.recording-dot {
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
