@@ -642,43 +642,71 @@ defmodule MtaaniWeb.HomeLive do
             <%= for post <- @posts do %>
               <div
                 id={"post-container-#{post.id}"}
-                phx-hook="DoubleTapLike"
+                phx-hook="ContextMenu"
                 data-post-id={post.id}
+                data-is-own-post={post.user_id == @current_user_id}
                 class="feed-post bg-white rounded-xl shadow-sm border border-onyx-mauve/10 overflow-hidden"
               >
-                <!-- Post Header -->
-                <div class="p-4 flex items-center justify-between">
-                  <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-verdant-forest/20 flex items-center justify-center">
-                      <span class="text-verdant-forest font-semibold">
-                        {if post.user, do: String.slice(post.user.name, 0..0), else: "?"}
-                      </span>
+                <!-- Double-tap area (header + content only) -->
+                <div
+                  id={"double-tap-#{post.id}"}
+                  phx-hook="DoubleTapLike"
+                  data-post-id={post.id}
+                  class="double-tap-area"
+                >
+                  <!-- Post Header -->
+                  <div class="p-4 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 rounded-full bg-verdant-forest/20 flex items-center justify-center">
+                        <span class="text-verdant-forest font-semibold">
+                          {if post.user, do: String.slice(post.user.name, 0..0), else: "?"}
+                        </span>
+                      </div>
+                      
+                      <div>
+                        <p class="font-semibold text-onyx-deep">
+                          {if post.user, do: post.user.name, else: "Unknown User"}
+                        </p>
+                        
+                        <p class="text-xs text-onyx-mauve">{time_ago(post.inserted_at)}</p>
+                      </div>
                     </div>
                     
-                    <div>
-                      <p class="font-semibold text-onyx-deep">
-                        {if post.user, do: post.user.name, else: "Unknown User"}
-                      </p>
-                      
-                      <p class="text-xs text-onyx-mauve">{time_ago(post.inserted_at)}</p>
-                    </div>
+                    <button class="text-onyx-mauve hover:text-onyx-deep">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                        />
+                      </svg>
+                    </button>
                   </div>
                   
-                  <button class="text-onyx-mauve hover:text-onyx-deep">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                      />
-                    </svg>
-                  </button>
+    <!-- Post Content -->
+                  <div class="post-content px-4 pb-3">
+                    <p class="text-onyx-deep">{post.content}</p>
+                  </div>
                 </div>
                 
-    <!-- Post Content -->
-                <div class="px-4 pb-3">
-                  <p class="text-onyx-deep">{post.content}</p>
+    <!-- Reaction Bar -->
+                <div class="px-4 py-1 flex flex-wrap gap-2">
+                  <%= for emoji <- ["❤️", "👍", "😂", "😮", "😢", "🙏"] do %>
+                    <% count = Map.get(get_reaction_counts(post.id), emoji, 0) %>
+                    <button
+                      phx-click="add_reaction"
+                      phx-value-type="post"
+                      phx-value-id={post.id}
+                      phx-value-emoji={emoji}
+                      class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm hover:bg-onyx-mauve/10 dark:hover:bg-white/10 transition-colors"
+                    >
+                      <span class="text-base">{emoji}</span>
+                      <%= if count > 0 do %>
+                        <span class="text-xs text-onyx-mauve dark:text-gray-400">{count}</span>
+                      <% end %>
+                    </button>
+                  <% end %>
                 </div>
                 
     <!-- Comment Section (hidden initially) -->
