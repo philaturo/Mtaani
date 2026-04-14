@@ -16,6 +16,7 @@ import DoubleTapLike from "./hooks/double_tap_like";
 import LikeAnimation from "./hooks/like_animation";
 import ScrollToTop from "./hooks/scroll_to_top";
 import SwipeToReply from "./hooks/swipe_to_reply";
+import ContextMenu from "./hooks/context_menu";
 
 // Get CSRF token from meta tag
 let csrfToken = document
@@ -43,6 +44,8 @@ let liveSocket = new LiveSocket("/live", Socket, {
     LikeAnimation: LikeAnimation,
     ScrollToTop: ScrollToTop,
     SwipeToReply: SwipeToReply,
+    ContextMenu: ContextMenu,
+}
 
     // Geolocation hook
     Geolocation: {
