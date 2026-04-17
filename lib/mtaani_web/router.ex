@@ -8,24 +8,39 @@ defmodule MtaaniWeb.Router do
     plug :put_root_layout, html: {MtaaniWeb.Layouts, :app}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug :fetch_current_user
   end
 
   pipeline :api do
     plug :accepts, ["json"]
   end
 
-  # Authentication pipeline
   pipeline :require_auth do
-    plug :fetch_current_user
     plug :require_authenticated_user
   end
 
   defp fetch_current_user(conn, _opts) do
-    if user_id = get_session(conn, :user_id) do
-      user = Mtaani.Accounts.get_user(user_id)
-      assign(conn, :current_user, user)
-    else
-      assign(conn, :current_user, nil)
+    case get_session(conn, :user_id) do
+      nil ->
+        assign(conn, :current_user, nil)
+
+      user_id when is_integer(user_id) ->
+        case Mtaani.Accounts.get_user(user_id) do
+          nil -> assign(conn, :current_user, nil)
+          user -> assign(conn, :current_user, user)
+        end
+
+      user_id when is_binary(user_id) ->
+        case Integer.parse(user_id) do
+          {int_id, ""} ->
+            case Mtaani.Accounts.get_user(int_id) do
+              nil -> assign(conn, :current_user, nil)
+              user -> assign(conn, :current_user, user)
+            end
+
+          _ ->
+            assign(conn, :current_user, nil)
+        end
     end
   end
 
@@ -40,7 +55,7 @@ defmodule MtaaniWeb.Router do
     end
   end
 
-  # Public routes (no authentication required)
+  # Public routes
   scope "/", MtaaniWeb do
     pipe_through :browser
 
@@ -48,15 +63,15 @@ defmodule MtaaniWeb.Router do
     get "/health", PageController, :health
   end
 
-  # Login POST endpoint
+  # Session routes - only GET for redirect after verification, POST removed since we use LiveView events
   scope "/", MtaaniWeb do
     pipe_through :browser
 
-    post "/login", SessionController, :create
     get "/login", SessionController, :new
+    delete "/logout", SessionController, :delete
   end
 
-  # Protected routes (authentication required)
+  # Protected routes
   scope "/", MtaaniWeb do
     pipe_through [:browser, :require_auth]
 
@@ -67,15 +82,11 @@ defmodule MtaaniWeb.Router do
     live "/plan", PlanLive, :index
     live "/profile", ProfileLive, :index
     live "/profile/:username", ProfileLive, :index
-
-    get "/logout", SessionController, :delete
   end
 
-  # WhatsApp webhook endpoint (for later)
+  # API routes
   scope "/api", MtaaniWeb do
     pipe_through :api
-    # post "/whatsapp", WhatsAppController, :webhook
-    # get "/whatsapp", WhatsAppController, :verify
   end
 
   if Application.compile_env(:mtaani, :dev_routes) do
