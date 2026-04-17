@@ -14,7 +14,9 @@ defmodule MtaaniWeb.AuthLive do
      |> assign(:success, nil)
      |> assign(:phone, nil)
      |> assign(:code_sent, false)
-     |> assign(:show_emergency, false)}
+     |> assign(:show_emergency, false)
+     |> assign(:login_phone, "")
+     |> assign(:login_password, "")}
   end
 
   @impl true
@@ -25,28 +27,41 @@ defmodule MtaaniWeb.AuthLive do
         <!-- Logo -->
         <div class="text-center mb-8">
           <h1 class="text-4xl font-bold text-verdant-forest tracking-tight">Mtaani</h1>
+          
           <p class="text-onyx-mauve mt-2 text-sm">Your local guide to Nairobi</p>
         </div>
-
+        
         <%= if @page == "login" do %>
           <div class="bg-white rounded-2xl shadow-xl border border-onyx-mauve/10 p-8">
             <h2 class="text-2xl font-semibold text-onyx-deep mb-2">Welcome back</h2>
+            
             <p class="text-onyx-mauve text-sm mb-6">Sign in to continue exploring</p>
             
-            <form action="/login" method="POST" class="space-y-5">
-              <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
-              
+            <form phx-submit="login" class="space-y-5">
               <div>
                 <label class="block text-sm font-medium text-onyx-deep mb-2">Phone Number</label>
                 <div class="relative">
                   <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-onyx-mauve">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3" />
+                    <svg
+                      class="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3"
+                      />
                     </svg>
                   </span>
+                  
                   <input
                     type="tel"
                     name="phone"
+                    value={@login_phone}
+                    phx-change="update_login_phone"
                     placeholder="07XXXXXXXX"
                     class="w-full pl-10 pr-4 py-3 border border-onyx-mauve/30 rounded-xl focus:outline-none focus:border-verdant-forest focus:ring-2 focus:ring-verdant-forest/20 transition-all"
                   />
@@ -57,13 +72,26 @@ defmodule MtaaniWeb.AuthLive do
                 <label class="block text-sm font-medium text-onyx-deep mb-2">Password</label>
                 <div class="relative">
                   <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-onyx-mauve">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                    <svg
+                      class="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+                      />
                     </svg>
                   </span>
+                  
                   <input
                     type="password"
                     name="password"
+                    value={@login_password}
+                    phx-change="update_login_password"
                     class="w-full pl-10 pr-4 py-3 border border-onyx-mauve/30 rounded-xl focus:outline-none focus:border-verdant-forest focus:ring-2 focus:ring-verdant-forest/20 transition-all"
                     placeholder="••••••••"
                   />
@@ -72,38 +100,56 @@ defmodule MtaaniWeb.AuthLive do
               
               <%= if @error do %>
                 <div class="bg-verdant-clay/10 border border-verdant-clay/20 rounded-xl p-3">
-                  <p class="text-verdant-clay text-sm"><%= @error %></p>
+                  <p class="text-verdant-clay text-sm">{@error}</p>
                 </div>
               <% end %>
               
-              <button type="submit" class="w-full bg-verdant-forest text-white py-3 rounded-xl hover:bg-verdant-deep transition-colors font-medium shadow-sm">
+              <button
+                type="submit"
+                class="w-full bg-verdant-forest text-white py-3 rounded-xl hover:bg-verdant-deep transition-colors font-medium shadow-sm"
+              >
                 Sign in
               </button>
             </form>
             
             <div class="text-center mt-6">
-              <button phx-click="show_register" class="text-verdant-forest text-sm hover:underline font-medium">
+              <button
+                phx-click="show_register"
+                class="text-verdant-forest text-sm hover:underline font-medium"
+              >
                 Don't have an account? Create one
               </button>
             </div>
           </div>
         <% end %>
-
+        
         <%= if @page == "register" do %>
           <div class="bg-white rounded-2xl shadow-xl border border-onyx-mauve/10 p-8">
             <h2 class="text-2xl font-semibold text-onyx-deep mb-2">Create account</h2>
+            
             <p class="text-onyx-mauve text-sm mb-6">Join the Mtaani community</p>
-
+            
             <%= if not @code_sent do %>
               <form phx-submit="send_code" phx-change="validate" class="space-y-5">
                 <div>
                   <label class="block text-sm font-medium text-onyx-deep mb-2">Full name</label>
                   <div class="relative">
                     <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-onyx-mauve">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                      <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+                        />
                       </svg>
                     </span>
+                    
                     <input
                       type="text"
                       name="name"
@@ -118,10 +164,21 @@ defmodule MtaaniWeb.AuthLive do
                   <label class="block text-sm font-medium text-onyx-deep mb-2">Username</label>
                   <div class="relative">
                     <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-onyx-mauve">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                      <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+                        />
                       </svg>
                     </span>
+                    
                     <input
                       type="text"
                       name="username"
@@ -130,17 +187,31 @@ defmodule MtaaniWeb.AuthLive do
                       placeholder="username (unique handle)"
                     />
                   </div>
-                  <p class="text-xs text-onyx-mauve mt-1">3-20 characters, letters, numbers, or underscore</p>
+                  
+                  <p class="text-xs text-onyx-mauve mt-1">
+                    3-20 characters, letters, numbers, or underscore
+                  </p>
                 </div>
                 
                 <div>
                   <label class="block text-sm font-medium text-onyx-deep mb-2">Phone number</label>
                   <div class="relative">
                     <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-onyx-mauve">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3" />
+                      <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3"
+                        />
                       </svg>
                     </span>
+                    
                     <input
                       type="tel"
                       name="phone"
@@ -155,10 +226,21 @@ defmodule MtaaniWeb.AuthLive do
                   <label class="block text-sm font-medium text-onyx-deep mb-2">Password</label>
                   <div class="relative">
                     <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-onyx-mauve">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                      <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+                        />
                       </svg>
                     </span>
+                    
                     <input
                       type="password"
                       name="password"
@@ -168,28 +250,52 @@ defmodule MtaaniWeb.AuthLive do
                   </div>
                 </div>
                 
-                <!-- Profile Photo Upload -->
+    <!-- Profile Photo Upload -->
                 <div class="border-2 border-dashed border-onyx-mauve/30 rounded-xl p-4 text-center">
                   <label class="cursor-pointer block">
-                    <div class="w-20 h-20 mx-auto rounded-full bg-verdant-forest/10 flex items-center justify-center overflow-hidden" id="profile-preview">
-                      <svg class="w-10 h-10 text-verdant-forest" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+                    <div
+                      class="w-20 h-20 mx-auto rounded-full bg-verdant-forest/10 flex items-center justify-center overflow-hidden"
+                      id="profile-preview"
+                    >
+                      <svg
+                        class="w-10 h-10 text-verdant-forest"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"
+                        />
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"
+                        />
                       </svg>
                     </div>
-                    <span class="text-sm text-verdant-forest mt-2 inline-block">Add profile photo</span>
-                    <input type="file" id="profile-photo" accept="image/*" class="hidden" />
+                    
+                    <span class="text-sm text-verdant-forest mt-2 inline-block">
+                      Add profile photo
+                    </span>
+                     <input type="file" id="profile-photo" accept="image/*" class="hidden" />
                   </label>
+                  
                   <p class="text-xs text-onyx-mauve mt-1">Optional. You can add later.</p>
                 </div>
                 
                 <%= if @error do %>
                   <div class="bg-verdant-clay/10 border border-verdant-clay/20 rounded-xl p-3">
-                    <p class="text-verdant-clay text-sm"><%= @error %></p>
+                    <p class="text-verdant-clay text-sm">{@error}</p>
                   </div>
                 <% end %>
                 
-                <button type="submit" class="w-full bg-verdant-forest text-white py-3 rounded-xl hover:bg-verdant-deep transition-colors font-medium shadow-sm">
+                <button
+                  type="submit"
+                  class="w-full bg-verdant-forest text-white py-3 rounded-xl hover:bg-verdant-deep transition-colors font-medium shadow-sm"
+                >
                   Send verification code
                 </button>
               </form>
@@ -197,18 +303,33 @@ defmodule MtaaniWeb.AuthLive do
               <form phx-submit="verify_code" class="space-y-5">
                 <div class="bg-verdant-sage/10 border border-verdant-sage/20 rounded-xl p-4 mb-2">
                   <p class="text-sm text-onyx-deep text-center">
-                    We've sent a verification code to <strong class="text-verdant-forest"><%= @phone %></strong>
+                    We've sent a verification code to
+                    <strong class="text-verdant-forest">{@phone}</strong>
                   </p>
                 </div>
                 
                 <div>
-                  <label class="block text-sm font-medium text-onyx-deep mb-2">Verification code</label>
+                  <label class="block text-sm font-medium text-onyx-deep mb-2">
+                    Verification code
+                  </label>
+                  
                   <div class="relative">
                     <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-onyx-mauve">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                     </span>
+                    
                     <input
                       type="text"
                       name="code"
@@ -220,30 +341,39 @@ defmodule MtaaniWeb.AuthLive do
                 
                 <%= if @error do %>
                   <div class="bg-verdant-clay/10 border border-verdant-clay/20 rounded-xl p-3">
-                    <p class="text-verdant-clay text-sm"><%= @error %></p>
+                    <p class="text-verdant-clay text-sm">{@error}</p>
                   </div>
                 <% end %>
                 
                 <%= if @success do %>
                   <div class="bg-verdant-sage/10 border border-verdant-sage/20 rounded-xl p-3">
-                    <p class="text-verdant-sage text-sm"><%= @success %></p>
+                    <p class="text-verdant-sage text-sm">{@success}</p>
                   </div>
                 <% end %>
                 
-                <button type="submit" class="w-full bg-verdant-forest text-white py-3 rounded-xl hover:bg-verdant-deep transition-colors font-medium shadow-sm">
+                <button
+                  type="submit"
+                  class="w-full bg-verdant-forest text-white py-3 rounded-xl hover:bg-verdant-deep transition-colors font-medium shadow-sm"
+                >
                   Verify & complete
                 </button>
               </form>
               
               <div class="text-center mt-4">
-                <button phx-click="resend_code" class="text-verdant-forest text-sm hover:underline font-medium">
+                <button
+                  phx-click="resend_code"
+                  class="text-verdant-forest text-sm hover:underline font-medium"
+                >
                   Resend code
                 </button>
               </div>
             <% end %>
-
+            
             <div class="text-center mt-6 pt-4 border-t border-onyx-mauve/20">
-              <button phx-click="show_login" class="text-verdant-forest text-sm hover:underline font-medium">
+              <button
+                phx-click="show_login"
+                class="text-verdant-forest text-sm hover:underline font-medium"
+              >
                 Already have an account? Sign in
               </button>
             </div>
@@ -252,6 +382,37 @@ defmodule MtaaniWeb.AuthLive do
       </div>
     </div>
     """
+  end
+
+  @impl true
+  def handle_event("update_login_phone", %{"phone" => phone}, socket) do
+    {:noreply, assign(socket, :login_phone, phone)}
+  end
+
+  @impl true
+  def handle_event("update_login_password", %{"password" => password}, socket) do
+    {:noreply, assign(socket, :login_password, password)}
+  end
+
+  @impl true
+  def handle_event("login", %{"phone" => phone, "password" => password}, socket) do
+    case Accounts.get_user_by_phone(phone) do
+      %{phone_verified: true} = user ->
+        if User.verify_password(password, user.password_hash) do
+          {:noreply,
+           socket
+           |> put_flash(:info, "Welcome back, #{user.name}!")
+           |> push_navigate(to: "/")}
+        else
+          {:noreply, assign(socket, error: "Invalid password")}
+        end
+
+      %{phone_verified: false} ->
+        {:noreply, assign(socket, error: "Please verify your phone number first")}
+
+      nil ->
+        {:noreply, assign(socket, error: "Account not found. Please register first.")}
+    end
   end
 
   @impl true
@@ -265,17 +426,34 @@ defmodule MtaaniWeb.AuthLive do
   end
 
   @impl true
-  def handle_event("validate", %{"name" => name, "username" => username, "phone" => phone, "password" => password}, socket) do
-    {:noreply, assign(socket, form: %{"name" => name, "username" => username, "phone" => phone, "password" => password})}
+  def handle_event(
+        "validate",
+        %{"name" => name, "username" => username, "phone" => phone, "password" => password},
+        socket
+      ) do
+    {:noreply,
+     assign(socket,
+       form: %{"name" => name, "username" => username, "phone" => phone, "password" => password}
+     )}
   end
 
   @impl true
-  def handle_event("send_code", %{"name" => name, "username" => username, "phone" => phone, "password" => password}, socket) do
+  def handle_event(
+        "send_code",
+        %{"name" => name, "username" => username, "phone" => phone, "password" => password},
+        socket
+      ) do
     case Accounts.get_user_by_username(username) do
       nil ->
-        case Accounts.create_user(%{name: name, username: username, phone: phone, password: password}) do
+        case Accounts.create_user(%{
+               name: name,
+               username: username,
+               phone: phone,
+               password: password
+             }) do
           {:ok, user} ->
             Accounts.send_verification_code(user.phone, user.verification_code)
+
             {:noreply,
              assign(socket,
                page: "register",
@@ -286,7 +464,11 @@ defmodule MtaaniWeb.AuthLive do
              )}
 
           {:error, changeset} ->
-            error_msg = changeset.errors |> Enum.map(fn {field, {msg, _}} -> "#{field}: #{msg}" end) |> Enum.join(", ")
+            error_msg =
+              changeset.errors
+              |> Enum.map(fn {field, {msg, _}} -> "#{field}: #{msg}" end)
+              |> Enum.join(", ")
+
             {:noreply, assign(socket, error: error_msg)}
         end
 
@@ -296,22 +478,21 @@ defmodule MtaaniWeb.AuthLive do
   end
 
   @impl true
-def handle_event("verify_code", %{"code" => code}, socket) do
-  case Accounts.get_user_by_phone(socket.assigns.phone) do
-    nil ->
-      {:noreply, assign(socket, error: "User not found")}
+  def handle_event("verify_code", %{"code" => code}, socket) do
+    case Accounts.get_user_by_phone(socket.assigns.phone) do
+      nil ->
+        {:noreply, assign(socket, error: "User not found")}
 
-    user ->
-      case Accounts.verify_phone(user, code) do
-        {:ok, user} ->
-          # Redirect to login controller which will set the session
-          {:noreply, push_navigate(socket, to: "/login?phone=#{URI.encode(user.phone)}")}
+      user ->
+        case Accounts.verify_phone(user, code) do
+          {:ok, user} ->
+            {:noreply, push_navigate(socket, to: "/login?phone=#{URI.encode(user.phone)}")}
 
-        {:error, message} ->
-          {:noreply, assign(socket, error: message)}
-      end
+          {:error, message} ->
+            {:noreply, assign(socket, error: message)}
+        end
+    end
   end
-end
 
   @impl true
   def handle_event("resend_code", _, socket) do
@@ -332,7 +513,11 @@ end
     end
   end
 
-  # ==================== ONLINE TRACKER HANDLERS ====================
+  @impl true
+  def handle_event("navigate", %{"page" => page}, socket) do
+    {:noreply, push_navigate(socket, to: "/#{page}")}
+  end
+
   @impl true
   def handle_event("user_online", %{"user_id" => user_id}, socket) do
     MtaaniWeb.OnlineTracker.add_user(user_id)
@@ -345,7 +530,6 @@ end
     {:noreply, socket}
   end
 
-  # ==================== EMERGENCY HANDLERS ====================
   @impl true
   def handle_event("open_emergency", _, socket) do
     {:noreply, assign(socket, :show_emergency, true)}
