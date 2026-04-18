@@ -44,7 +44,7 @@ defmodule MtaaniWeb.WelcomeLive do
       <div class="max-w-md mx-auto px-4 py-12">
         <!-- Success Icon -->
         <div class="flex justify-center mb-6">
-          <div class="w-20 h-20 rounded-full bg-green-50 border-2 border-green-200 flex items-center justify-center animate-bounce">
+          <div class="welcome-success-icon w-20 h-20 rounded-full bg-green-50 border-2 border-green-200 flex items-center justify-center animate-bounce">
             <svg
               class="w-10 h-10 text-green-500"
               fill="none"
@@ -59,9 +59,11 @@ defmodule MtaaniWeb.WelcomeLive do
         
     <!-- Title -->
         <div class="text-center mb-4">
-          <h1 class="text-2xl font-semibold text-onyx-deep">You're in, {@current_user.name}!</h1>
+          <h1 class="welcome-title text-2xl font-semibold text-onyx-deep">
+            You're in, {@current_user.name}!
+          </h1>
           
-          <p class="text-sm text-onyx-mauve mt-2">
+          <p class="welcome-subtitle text-sm text-onyx-mauve mt-2">
             Your Mtaani account is ready. Kenya is waiting for you.
           </p>
         </div>
@@ -81,11 +83,11 @@ defmodule MtaaniWeb.WelcomeLive do
             <div class="text-xs text-onyx-mauve">@{@current_user.username} · Nairobi, Kenya</div>
             
             <div class="flex gap-2 mt-1">
-              <span class="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700">
+              <span class="welcome-verified-badge text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700">
                 Verified member
               </span>
               
-              <span class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+              <span class="welcome-type-badge text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
                 {@type_badge}
               </span>
             </div>
@@ -142,7 +144,7 @@ defmodule MtaaniWeb.WelcomeLive do
     <!-- Action Buttons -->
         <button
           phx-click="start_exploring"
-          class="w-full bg-verdant-forest text-white py-3 rounded-xl font-medium hover:bg-verdant-deep transition-all shadow-lg"
+          class="welcome-start-button w-full bg-verdant-forest text-white py-3 rounded-xl font-medium hover:bg-verdant-deep transition-all shadow-lg"
         >
           Start exploring Kenya
         </button>
@@ -150,7 +152,7 @@ defmodule MtaaniWeb.WelcomeLive do
         <div class="text-center mt-4">
           <button
             phx-click="complete_profile_later"
-            class="text-sm text-onyx-mauve hover:text-verdant-forest transition-colors"
+            class="welcome-skip-link text-sm text-onyx-mauve hover:text-verdant-forest transition-colors"
           >
             Complete your profile first
           </button>
