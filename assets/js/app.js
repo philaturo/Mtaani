@@ -23,6 +23,8 @@ import StoriesViewer from "./hooks/stories_viewer";
 import SharePost from "./hooks/share_post";
 import PinchZoom from "./hooks/pinch_zoom";
 import VoiceRecorder from "./hooks/voice_recorder";
+import OtpInput from "./hooks/otp_input";
+import AvatarUpload from "./hooks/avatar_upload";
 
 // Get CSRF token from meta tag
 let csrfToken = document
@@ -41,6 +43,8 @@ let liveSocket = new LiveSocket("/live", Socket, {
     PullToRefresh: PullToRefresh,
     TypingIndicator: TypingIndicator,
     MessageObserver: MessageObserver,
+    OtpInput: OtpInput,
+    AvatarUpload: AvatarUpload,
 
     // New hooks for feed and chat
     InfiniteScroll: InfiniteScroll,
