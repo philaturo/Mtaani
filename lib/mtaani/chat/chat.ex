@@ -18,7 +18,6 @@ defmodule Mtaani.Chat do
         join: cp2 in ConversationParticipant,
         on: cp.conversation_id == cp2.conversation_id,
         where: cp.user_id == ^user1_id and cp2.user_id == ^user2_id,
-        where: cp.conversation_id == cp2.conversation_id,
         select: cp.conversation_id
       )
 
@@ -50,16 +49,21 @@ defmodule Mtaani.Chat do
     |> Repo.insert()
   end
 
-  def list_user_conversations(user_id) do
-    query =
+  # For testing, will remove when cleaning codebase
+  def list_user_conversations(nil), do: []
+
+  def list_user_conversations(user_id) when is_integer(user_id) do
+    # Get all participants for this user with their conversations preloaded
+    participants =
       from(cp in ConversationParticipant,
-        join: c in assoc(cp, :conversation),
         where: cp.user_id == ^user_id,
-        order_by: [desc: c.last_message_at],
+        order_by: [desc: cp.inserted_at],
         preload: [conversation: [:participants]]
       )
+      |> Repo.all()
 
-    Repo.all(query)
+    # Return the list of participants (each contains the conversation)
+    participants
   end
 
   def update_last_message(conversation_id, message_content, timestamp) do
@@ -83,7 +87,7 @@ defmodule Mtaani.Chat do
         on: cp.conversation_id == m.conversation_id,
         where: m.conversation_id == ^conversation_id,
         where: cp.user_id == ^user_id,
-        where: m.inserted_at > cp.last_read_at or is_nil(cp.last_read_at),
+        where: is_nil(cp.last_read_at) or m.inserted_at > cp.last_read_at,
         where: m.user_id != ^user_id,
         select: count(m.id)
       )
