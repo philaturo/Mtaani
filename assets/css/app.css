@@ -2089,3 +2089,78 @@ body {
 .dark .lc-icon-wrap svg {
   stroke: #5da87a;
 }
+
+/* Dark Mode - Welcome Page */
+.dark .welcome-success-icon {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.dark .welcome-success-icon svg {
+  stroke: #5da87a;
+}
+
+.dark .welcome-title {
+  color: #e0e0e0;
+}
+
+.dark .welcome-subtitle {
+  color: #9ca3af;
+}
+
+.dark .welcome-user-card {
+  background: #1e1e1e;
+  border-color: #374151;
+}
+
+.dark .welcome-user-name {
+  color: #e0e0e0;
+}
+
+.dark .welcome-user-handle {
+  color: #9ca3af;
+}
+
+.dark .welcome-verified-badge {
+  background: rgba(16, 185, 129, 0.15);
+  color: #5da87a;
+}
+
+.dark .welcome-type-badge {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+.dark .welcome-action-card {
+  background: #1e1e1e;
+  border-color: #374151;
+}
+
+.dark .welcome-action-card:hover {
+  background: #2d2d2d;
+  border-color: #10b981;
+}
+
+.dark .welcome-action-title {
+  color: #e0e0e0;
+}
+
+.dark .welcome-action-description {
+  color: #9ca3af;
+}
+
+.dark .welcome-start-button {
+  background: #10b981;
+}
+
+.dark .welcome-start-button:hover {
+  background: #059669;
+}
+
+.dark .welcome-skip-link {
+  color: #9ca3af;
+}
+
+.dark .welcome-skip-link:hover {
+  color: #10b981;
+}
