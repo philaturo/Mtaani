@@ -5,27 +5,33 @@ defmodule MtaaniWeb.ProfileSetupLive do
   alias Mtaani.Accounts.User
 
   @impl true
-  def mount(_params, _session, socket) do
-    current_user = socket.assigns.current_user
+  def mount(_params, session, socket) do
+    user_id = session["user_id"]
 
-    if is_nil(current_user) do
+    if is_nil(user_id) do
       {:ok, push_navigate(socket, to: "/")}
     else
-      {:ok,
-       socket
-       |> assign(:step, 3)
-       |> assign(:current_user, current_user)
-       |> assign(:bio, current_user.bio || "")
-       |> assign(:bio_count, String.length(current_user.bio || ""))
-       |> assign(:traveler_type, "traveler")
-       |> assign(:location_enabled, true)
-       |> assign(:avatar_url, current_user.profile_photo_url)
-       |> assign(:avatar_initials, get_initials(current_user.name))
-       |> assign(:avatar_color, get_avatar_color(current_user.id))
-       |> assign(:show_emergency, false)
-       |> assign(:saving, false)
-       |> assign(:error, nil)
-       |> assign(:success, nil)}
+      current_user = Mtaani.Repo.get(User, user_id)
+
+      if is_nil(current_user) do
+        {:ok, push_navigate(socket, to: "/")}
+      else
+        {:ok,
+         socket
+         |> assign(:step, 3)
+         |> assign(:current_user, current_user)
+         |> assign(:bio, current_user.bio || "")
+         |> assign(:bio_count, String.length(current_user.bio || ""))
+         |> assign(:traveler_type, "traveler")
+         |> assign(:location_enabled, true)
+         |> assign(:avatar_url, current_user.profile_photo_url)
+         |> assign(:avatar_initials, get_initials(current_user.name))
+         |> assign(:avatar_color, get_avatar_color(current_user.id))
+         |> assign(:show_emergency, false)
+         |> assign(:saving, false)
+         |> assign(:error, nil)
+         |> assign(:success, nil)}
+      end
     end
   end
 
