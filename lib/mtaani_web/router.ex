@@ -90,6 +90,7 @@ defmodule MtaaniWeb.Router do
     live "/profile", ProfileLive, :index
     live "/profile/:username", ProfileLive, :index
     live "/profile-setup", ProfileSetupLive, :index
+    live "/welcome", WelcomeLive, :index
   end
 
   # API routes
