@@ -45,7 +45,6 @@ defmodule Mtaani.MixProject do
       {:pbkdf2_elixir, "~> 2.0"},
       {:geo_postgis, "~> 3.5"},
       {:redix, "~> 1.3"},
-      
     ]
   end
 
