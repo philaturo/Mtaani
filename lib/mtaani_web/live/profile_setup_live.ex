@@ -1,5 +1,6 @@
 defmodule MtaaniWeb.ProfileSetupLive do
   use MtaaniWeb, :live_view
+  import Phoenix.LiveView, only: [push_navigate: 2, put_flash: 3, push_event: 3]
 
   alias Mtaani.Accounts
   alias Mtaani.Accounts.User
@@ -81,6 +82,7 @@ defmodule MtaaniWeb.ProfileSetupLive do
         </div>
         
         <div class="bg-white/80 backdrop-blur-sm rounded-2xl border border-onyx-mauve/20 p-6 space-y-5">
+          <!-- Avatar Picker -->
           <div class="flex flex-col items-center">
             <div class="relative cursor-pointer group" phx-click="change_avatar">
               <div
@@ -111,6 +113,7 @@ defmodule MtaaniWeb.ProfileSetupLive do
             <p class="text-xs text-onyx-mauve mt-2">Tap to add a profile photo</p>
           </div>
           
+    <!-- Bio -->
           <div>
             <label class="block text-xs font-medium text-onyx-deep mb-1">Short bio</label>
             <div class="border border-onyx-mauve/20 rounded-lg overflow-hidden bg-white focus-within:border-verdant-forest">
@@ -131,6 +134,7 @@ defmodule MtaaniWeb.ProfileSetupLive do
             </div>
           </div>
           
+    <!-- Traveler Type -->
           <div>
             <label class="block text-xs font-medium text-onyx-deep mb-2">I am a</label>
             <div class="grid grid-cols-2 gap-2">
@@ -254,6 +258,7 @@ defmodule MtaaniWeb.ProfileSetupLive do
             </div>
           </div>
           
+    <!-- Location Permission -->
           <div class="bg-verdant-sage/5 rounded-xl border border-verdant-sage/20 p-3 flex gap-3">
             <div class="w-10 h-10 rounded-lg bg-verdant-sage/10 flex items-center justify-center flex-shrink-0">
               <svg
@@ -347,7 +352,7 @@ defmodule MtaaniWeb.ProfileSetupLive do
 
   @impl true
   def handle_event("skip", _, socket) do
-    {:noreply, push_navigate(socket, to: "/home")}
+    {:noreply, push_navigate(socket, to: "/welcome")}
   end
 
   @impl true
@@ -369,7 +374,7 @@ defmodule MtaaniWeb.ProfileSetupLive do
         {:noreply,
          socket
          |> put_flash(:info, "Profile setup complete! Welcome to Mtaani.")
-         |> push_navigate(to: "/home")}
+         |> push_navigate(to: "/welcome")}
 
       {:error, changeset} ->
         error_msg =
