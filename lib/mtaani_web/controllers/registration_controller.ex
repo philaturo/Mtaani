@@ -67,7 +67,7 @@ defmodule MtaaniWeb.RegistrationController do
               |> put_session(:user_id, user.id)
               |> configure_session(renew: true)
               |> put_flash(:info, "Phone verified successfully!")
-              |> redirect(to: "/profile-setup")
+              |> redirect(to: "/welcome")
 
             {:error, message} ->
               conn
