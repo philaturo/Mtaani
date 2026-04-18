@@ -11,25 +11,25 @@ defmodule MtaaniWeb.RegistrationController do
         "phone" => phone,
         "password" => password
       }) do
-    formatted_phone = "+254" <> phone
     name = first_name <> " " <> last_name
 
     case Accounts.create_user(%{
            name: name,
            username: username,
-           phone: formatted_phone,
+           phone: phone,
            password: password,
            phone_verified: false
          }) do
-      {:ok, _user} ->
-        code = Accounts.generate_verification_code()
+      {:ok, user} ->
+        # Use the verification code that was already generated during user creation
+        code = user.verification_code
 
-        IO.puts("📱 Verification code for #{formatted_phone}: #{code}")
+        IO.puts("📱 Verification code for #{phone}: #{code}")
 
         conn
         |> put_session(:verification_code, code)
         |> put_session(:pending_phone, phone)
-        |> put_flash(:info, "Verification code sent to #{formatted_phone}")
+        |> put_flash(:info, "Verification code sent to #{phone}")
         |> redirect(to: "/verify")
 
       {:error, changeset} ->
@@ -57,9 +57,7 @@ defmodule MtaaniWeb.RegistrationController do
     pending_phone = get_session(conn, :pending_phone)
 
     if entered_code == stored_code do
-      formatted_phone = "+254" <> pending_phone
-
-      case Accounts.get_user_by_phone(formatted_phone) do
+      case Accounts.get_user_by_phone(pending_phone) do
         %User{} = user ->
           case Accounts.verify_phone(user, entered_code) do
             {:ok, user} ->
