@@ -1,17 +1,17 @@
 defmodule MtaaniWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :mtaani
 
-  # The session will be stored in the cookie and signed,
-  # this means its contents can be read but not tampered with.
   @session_options [
     store: :cookie,
     key: "_mtaani_key",
     signing_salt: "3iG53XhK",
-    same_site: "Lax"
+    same_site: "Lax",
+    http_only: true,
+    secure: false,
+    max_age: 14 * 24 * 60 * 60
   ]
 
-  socket "/live", Phoenix.LiveView.Socket,
-    websocket: [connect_info: [session: @session_options]]
+  socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
 
   # Serve at "/" the static files from "priv/static" directory.
   plug Plug.Static,
