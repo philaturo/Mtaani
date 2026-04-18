@@ -8,42 +8,52 @@ defmodule MtaaniWeb.ChatLive do
 
   @impl true
   def mount(_params, session, socket) do
-    current_user_id = session["user_id"] || 1
-    current_user = Mtaani.Repo.get(User, current_user_id)
+    # Get user_id from session (string key from LiveView)
+    user_id = session["user_id"]
 
-    socket =
-      socket
-      |> assign(:active_tab, "chat")
-      |> assign(:show_emergency, false)
-      |> assign(:current_user_id, current_user_id)
-      |> assign(:current_user, current_user)
-      |> assign(:filter, "all")
-      |> assign(:search_query, "")
-      |> assign(:conversations, [])
-      |> assign(:filtered_conversations, [])
-      |> assign(:selected_conversation, nil)
-      |> assign(:messages, [])
-      |> assign(:chat_id, nil)
-      |> assign(:chat_type, nil)
-      |> assign(:chat_partner, nil)
-      |> assign(:input_text, "")
-      |> assign(:online_users, [])
-      |> assign(:typing_users, [])
-      |> assign(:partner_safety_zone, %{name: "Unknown", safety_level: 2})
-      |> assign(:partner_distance, nil)
+    if is_nil(user_id) do
+      # No session, redirect to auth
+      {:ok, push_navigate(socket, to: "/auth")}
+    else
+      # Convert to integer (session stores as string)
+      current_user_id = if is_binary(user_id), do: String.to_integer(user_id), else: user_id
+      current_user = Mtaani.Repo.get(User, current_user_id)
 
-    if connected?(socket) do
-      Phoenix.PubSub.subscribe(Mtaani.PubSub, "online_count")
-      Phoenix.PubSub.subscribe(Mtaani.PubSub, "chat_updates")
-      Phoenix.PubSub.subscribe(Mtaani.PubSub, "user_typing")
-      send(self(), :load_conversations)
-      send(self(), :load_online_users)
+      socket =
+        socket
+        |> assign(:active_tab, "chat")
+        |> assign(:show_emergency, false)
+        |> assign(:current_user_id, current_user_id)
+        |> assign(:current_user, current_user)
+        |> assign(:filter, "all")
+        |> assign(:search_query, "")
+        |> assign(:conversations, [])
+        |> assign(:filtered_conversations, [])
+        |> assign(:selected_conversation, nil)
+        |> assign(:messages, [])
+        |> assign(:grouped_messages, [])
+        |> assign(:chat_id, nil)
+        |> assign(:chat_type, nil)
+        |> assign(:chat_partner, nil)
+        |> assign(:input_text, "")
+        |> assign(:online_users, [])
+        |> assign(:typing_users, [])
+        |> assign(:partner_safety_zone, %{name: "Unknown", safety_level: 2})
+        |> assign(:partner_distance, nil)
+
+      if connected?(socket) do
+        Phoenix.PubSub.subscribe(Mtaani.PubSub, "online_count")
+        Phoenix.PubSub.subscribe(Mtaani.PubSub, "chat_updates")
+        Phoenix.PubSub.subscribe(Mtaani.PubSub, "user_typing")
+        send(self(), :load_conversations)
+        send(self(), :load_online_users)
+      end
+
+      {:ok, socket}
     end
-
-    {:ok, socket}
   end
 
-  defp load_conversations(user_id) do
+  defp load_conversations(user_id) when is_integer(user_id) do
     user_conversations = Mtaani.Chat.list_user_conversations(user_id)
 
     Enum.map(user_conversations, fn cp ->
@@ -111,23 +121,26 @@ defmodule MtaaniWeb.ChatLive do
         online: is_online,
         safety_zone: safety_zone,
         type: conv.type,
-        is_pinned: conv.is_pinned || false
+        is_pinned: conv.is_pinned || false,
+        participants: conv.participants
       }
     end)
   end
+
+  defp load_conversations(_), do: []
 
   defp get_safety_zone_for_user(user_id) do
     user = Mtaani.Repo.get(User, user_id)
 
     if user && user.location do
-      %{name: "Nairobi", safety_level: 2}
+      %{name: "Karen, Nairobi", safety_level: 1}
     else
       %{name: "Unknown", safety_level: 2}
     end
   end
 
   defp get_distance_between_users(_user1_id, _user2_id) do
-    nil
+    "2.4"
   end
 
   @impl true
@@ -173,7 +186,8 @@ defmodule MtaaniWeb.ChatLive do
   @impl true
   def handle_info({:new_message, message}, socket) do
     messages = socket.assigns.messages ++ [message]
-    {:noreply, assign(socket, :messages, messages)}
+    grouped = group_messages_by_date(messages)
+    {:noreply, assign(socket, messages: messages, grouped_messages: grouped)}
   end
 
   @impl true
@@ -197,6 +211,7 @@ defmodule MtaaniWeb.ChatLive do
   def handle_event("select_conversation", %{"id" => id}, socket) do
     conversation = Enum.find(socket.assigns.conversations, &(&1.id == String.to_integer(id)))
     messages = load_messages(String.to_integer(id))
+    grouped = group_messages_by_date(messages)
 
     partner_id = get_partner_id(conversation, socket.assigns.current_user_id)
     partner = if partner_id, do: Mtaani.Repo.get(User, partner_id)
@@ -218,6 +233,7 @@ defmodule MtaaniWeb.ChatLive do
        chat_partner: partner,
        selected_conversation: conversation,
        messages: messages,
+       grouped_messages: grouped,
        partner_safety_zone: safety_zone,
        partner_distance: distance
      )}
@@ -248,8 +264,11 @@ defmodule MtaaniWeb.ChatLive do
       case Mtaani.Chat.create_message(attrs) do
         {:ok, msg} ->
           messages = socket.assigns.messages ++ [msg]
+          grouped = group_messages_by_date(messages)
           Phoenix.PubSub.broadcast(Mtaani.PubSub, "chat_updates", {:new_message, msg})
-          {:noreply, assign(socket, messages: messages, input_text: "")}
+
+          {:noreply,
+           assign(socket, messages: messages, grouped_messages: grouped, input_text: "")}
 
         {:error, _} ->
           {:noreply, socket}
@@ -276,6 +295,26 @@ defmodule MtaaniWeb.ChatLive do
   @impl true
   def handle_event("sos_alert", _, socket) do
     {:noreply, push_event(socket, "sos_alert", %{})}
+  end
+
+  @impl true
+  def handle_event("send_route", _, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("request_guide", _, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("meet_up", _, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("safety_check", _, socket) do
+    {:noreply, socket}
   end
 
   @impl true
@@ -348,10 +387,42 @@ defmodule MtaaniWeb.ChatLive do
         filter == "favorites" and not conv.is_pinned ->
           false
 
+        filter == "groups" and conv.type != "group" ->
+          false
+
+        filter == "nearby" ->
+          false
+
         true ->
           true
       end
     end)
+  end
+
+  defp group_messages_by_date(messages) do
+    messages
+    |> Enum.group_by(fn msg -> DateTime.to_date(msg.inserted_at) end)
+    |> Enum.sort_by(fn {date, _} -> date end, :desc)
+    |> Enum.map(fn {date, msgs} ->
+      {date, group_messages_by_sender(msgs)}
+    end)
+  end
+
+  defp group_messages_by_sender(messages) do
+    messages
+    |> Enum.group_by(fn msg -> msg.user_id end)
+    |> Enum.sort_by(fn {_, msgs} -> List.first(msgs).inserted_at end)
+  end
+
+  defp format_date_header(date) do
+    today = DateTime.to_date(DateTime.utc_now())
+    yesterday = Date.add(today, -1)
+
+    cond do
+      date == today -> "Today"
+      date == yesterday -> "Yesterday"
+      true -> Calendar.strftime(date, "%B %d, %Y")
+    end
   end
 
   @impl true
@@ -570,10 +641,10 @@ defmodule MtaaniWeb.ChatLive do
           </div>
           
           <div class="messages" id="messages-container" phx-hook="ScrollToBottom">
-            <%= for {date, date_messages} <- group_messages_by_date(@messages) do %>
+            <%= for {date, sender_groups} <- @grouped_messages do %>
               <div class="day-divider">{format_date_header(date)}</div>
               
-              <%= for {user_id, user_messages} <- group_messages_by_sender(date_messages) do %>
+              <%= for {user_id, user_messages} <- sender_groups do %>
                 <% is_me = user_id == @current_user_id %>
                 <div class={"msg-group #{if is_me, do: "me", else: "them"}"}>
                   <div class="msg-with-av">
@@ -616,10 +687,12 @@ defmodule MtaaniWeb.ChatLive do
           </div>
           
           <div class="quick-actions">
-            <button class="qa" phx-click="share_location">Share location</button>
-            <button class="qa">Send route</button> <button class="qa">Request guide</button>
-            <button class="qa">Meet up</button> <button class="qa">Safety check</button>
-            <button class="qa danger" phx-click="sos_alert">SOS</button>
+            <button class="qa" phx-click="share_location">📍 Share location</button>
+            <button class="qa" phx-click="send_route">🗺️ Send route</button>
+            <button class="qa" phx-click="request_guide">🧭 Request guide</button>
+            <button class="qa" phx-click="meet_up">📅 Meet up</button>
+            <button class="qa" phx-click="safety_check">🛡️ Safety check</button>
+            <button class="qa danger" phx-click="sos_alert">🆘 SOS</button>
           </div>
           
           <div class="input-area">
@@ -690,28 +763,6 @@ defmodule MtaaniWeb.ChatLive do
       2 -> "caution area"
       3 -> "high alert area"
       _ -> "unknown area"
-    end
-  end
-
-  defp group_messages_by_date(messages) do
-    messages
-    |> Enum.group_by(fn msg -> DateTime.to_date(msg.inserted_at) end)
-    |> Enum.sort_by(fn {date, _} -> date end, :desc)
-  end
-
-  defp group_messages_by_sender(messages) do
-    messages
-    |> Enum.group_by(fn msg -> msg.user_id end)
-  end
-
-  defp format_date_header(date) do
-    today = DateTime.to_date(DateTime.utc_now())
-    yesterday = Date.add(today, -1)
-
-    cond do
-      date == today -> "Today"
-      date == yesterday -> "Yesterday"
-      true -> Calendar.strftime(date, "%B %d, %Y")
     end
   end
 end
