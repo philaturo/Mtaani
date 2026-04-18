@@ -1977,3 +1977,115 @@ body {
 .animate-shake {
   animation: shake 0.3s ease-in-out;
 }
+
+/* Dark Mode - Verify Page */
+.dark .otp-box {
+  background: #1e1e1e;
+  border-color: #374151;
+  color: #e0e0e0;
+}
+
+.dark .otp-box.filled {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.dark .otp-box.active {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.dark .phone-preview {
+  background: #1e1e1e;
+  border-color: #374151;
+}
+
+.dark .pp-num {
+  color: #e0e0e0;
+}
+
+.dark .resend-row {
+  color: #9ca3af;
+}
+
+.dark .timer {
+  color: #e0e0e0;
+}
+
+.dark .security-note {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.dark .security-note-text {
+  color: #9ca3af;
+}
+
+/* Dark Mode - Profile Setup Page */
+.dark .avatar-picker .av-circle {
+  border-color: #374151;
+}
+
+.dark .avatar-picker .av-edit-badge {
+  background: #10b981;
+  border-color: #1a1a1a;
+}
+
+.dark .av-label {
+  color: #9ca3af;
+}
+
+.dark .field-wrap {
+  background: #1e1e1e;
+  border-color: #374151;
+}
+
+.dark .field-wrap textarea,
+.dark .field-wrap input {
+  background: #1e1e1e;
+  color: #e0e0e0;
+}
+
+.dark .field-wrap textarea::placeholder,
+.dark .field-wrap input::placeholder {
+  color: #6b7280;
+}
+
+.dark .tt-option {
+  background: #1e1e1e;
+  border-color: #374151;
+}
+
+.dark .tt-option.sel {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: #10b981;
+}
+
+.dark .tt-name {
+  color: #e0e0e0;
+}
+
+.dark .tt-desc {
+  color: #9ca3af;
+}
+
+.dark .location-card {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.dark .lc-title {
+  color: #5da87a;
+}
+
+.dark .lc-desc {
+  color: #9ca3af;
+}
+
+.dark .lc-icon-wrap {
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.dark .lc-icon-wrap svg {
+  stroke: #5da87a;
+}
