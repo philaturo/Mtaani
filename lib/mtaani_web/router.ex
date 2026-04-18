@@ -89,6 +89,7 @@ defmodule MtaaniWeb.Router do
     live "/plan", PlanLive, :index
     live "/profile", ProfileLive, :index
     live "/profile/:username", ProfileLive, :index
+    live "/profile-setup", ProfileSetupLive, :index
   end
 
   # API routes
