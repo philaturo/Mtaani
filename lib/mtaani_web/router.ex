@@ -8,14 +8,15 @@ defmodule MtaaniWeb.Router do
     plug :put_root_layout, html: {MtaaniWeb.Layouts, :app}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
-    plug :fetch_current_user
   end
 
   pipeline :api do
     plug :accepts, ["json"]
   end
 
+  # Authentication pipeline
   pipeline :require_auth do
+    plug :fetch_current_user
     plug :require_authenticated_user
   end
 
@@ -50,32 +51,38 @@ defmodule MtaaniWeb.Router do
     else
       conn
       |> put_flash(:error, "Please sign in to continue")
-      |> redirect(to: "/auth")
+      |> redirect(to: "/")
       |> halt()
     end
   end
 
-  # Public routes
+  # Public routes (no auth required)
   scope "/", MtaaniWeb do
     pipe_through :browser
 
-    live "/auth", AuthLive, :index
+    live "/", SplashLive, :index
+    live "/register", RegisterLive, :index
+    live "/verify", VerifyLive, :index
+    live "/profile-setup", ProfileSetupLive, :index
+    live "/login", LoginLive, :index
     get "/health", PageController, :health
   end
 
-  # Session routes - only GET for redirect after verification, POST removed since we use LiveView events
+  # Controller routes for form submissions
   scope "/", MtaaniWeb do
     pipe_through :browser
 
-    get "/login", SessionController, :new
+    post "/register", RegistrationController, :create
+    post "/verify", RegistrationController, :verify
+    post "/login", SessionController, :create
     delete "/logout", SessionController, :delete
   end
 
-  # Protected routes
+  # Protected routes (auth required)
   scope "/", MtaaniWeb do
     pipe_through [:browser, :require_auth]
 
-    live "/", HomeLive, :index
+    live "/home", HomeLive, :index
     live "/map", MapLive, :index
     live "/chat", ChatLive, :index
     live "/groups", GroupsLive, :index
