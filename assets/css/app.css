@@ -2979,163 +2979,37 @@ body {
   transform: translateX(16px);
 }
 
-/* Bottom Navigation */
-.nav-bar {
-  background: #fff;
-  border-top: 0.5px solid rgba(0, 0, 0, 0.08);
-  padding: 8px 0 12px;
-  display: flex;
-  flex-shrink: 0;
+/* Map Layout  */
+/* Map Canvas - fills remaining space above bottom nav */
+.map-canvas {
   position: relative;
-  z-index: 20;
-}
-
-.nav-item {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  cursor: pointer;
-  transition: all 0.2s;
+  background: #e8f0e0;
+  overflow: hidden;
+  cursor: grab;
+  min-height: 0;
 }
 
-.nav-item:hover {
-  transform: translateY(-2px);
-}
-
-.nav-icon {
-  font-size: 20px;
-}
-
-.nav-label {
-  font-size: 10px;
-  color: #9ca3af;
-}
-
-.nav-item.active .nav-label {
-  color: #10b981;
-  font-weight: 500;
-}
-
-/* Map Marker Styles (for MapLibre) */
-.maplibregl-popup {
-  max-width: 200px;
-}
-
-.maplibregl-popup-content {
-  padding: 8px 12px;
-  border-radius: 12px;
-}
-
-/* Custom User Marker */
-.user-marker {
-  position: relative;
-  cursor: pointer;
-}
-
-.user-dot {
-  width: 18px;
-  height: 18px;
-  background: #3b82f6;
-  border: 3px solid white;
-  border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.user-pulse {
+/* Map container inside canvas */
+#map {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 40px;
-  height: 40px;
-  background: rgba(59, 130, 246, 0.2);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  animation: ripple 2s infinite;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
 }
 
-@keyframes ripple {
-  0% {
-    transform: translate(-50%, -50%) scale(0.5);
-    opacity: 0.6;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(1.5);
-    opacity: 0;
-  }
+/* Map controls should be above the map */
+.map-ctrl,
+.layers-fab,
+.compass,
+.pulse-legend,
+.topbar {
+  z-index: 10;
 }
 
-/* Place Marker */
-.place-marker {
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transform: translateX(-50%);
-}
-
-.place-bubble {
-  background: white;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 20px;
-  padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
-}
-
-.place-bubble:hover {
-  transform: scale(1.05);
-}
-
-.place-icon {
-  font-size: 14px;
-}
-
-.place-name {
-  color: #1a1a1a;
-}
-
-.place-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-top: 2px;
-}
-
-/* Scrollbar Hide Utility */
-.scrollbar-hide {
-  scrollbar-width: none;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-/* Responsive Adjustments */
-@media (max-width: 420px) {
-  .frame {
-    border-radius: 0;
-    height: 100vh;
-  }
-
-  .topbar {
-    padding: 8px 10px;
-  }
-
-  .search-card {
-    height: 40px;
-  }
-
-  .av-btn {
-    width: 40px;
-    height: 40px;
-  }
+/* Bottom sheet sits above map, below bottom nav */
+.bottom-sheet {
+  z-index: 15;
 }
