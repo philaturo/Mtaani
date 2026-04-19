@@ -154,6 +154,34 @@ defmodule MtaaniWeb.MapLive do
   def handle_event("close_emergency", _, socket),
     do: {:noreply, assign(socket, :show_emergency, false)}
 
+  # Online tracking handlers
+  @impl true
+  def handle_event("user_online", %{"user_id" => user_id}, socket) do
+    MtaaniWeb.OnlineTracker.add_user(user_id)
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("user_offline", %{"user_id" => user_id}, socket) do
+    MtaaniWeb.OnlineTracker.remove_user(user_id)
+    {:noreply, socket}
+  end
+
+  # Geolocation error handler
+  @impl true
+  def handle_event("location_error", %{"error" => error}, socket) do
+    IO.puts("Geolocation error: #{error}")
+    # Default to Nairobi center when location is denied
+    {:noreply, push_event(socket, "center_on_nairobi", %{})}
+  end
+
+  # Alternative location update handler (matches profile_setup_live)
+  @impl true
+  def handle_event("location-update", %{"lat" => lat, "lng" => lng}, socket) do
+    # Reuse the existing user_location_update handler
+    handle_event("user_location_update", %{"lat" => lat, "lng" => lng}, socket)
+  end
+
   # Private helper functions
   defp load_nearby_places(socket, lat, lng) do
     sql = """
@@ -251,6 +279,12 @@ defmodule MtaaniWeb.MapLive do
     |> Enum.map(&String.first/1)
     |> Enum.join("")
     |> String.upcase()
+  end
+
+  defp get_avatar_color(id) do
+    colors = ["#10b981", "#3b82f6", "#8b5cf6", "#f59e0b", "#e11d48", "#0891b2", "#6366f1"]
+    index = rem(id, length(colors))
+    Enum.at(colors, index)
   end
 
   defp load_nearby_guides(socket, lat, lng) do
@@ -505,13 +539,18 @@ defmodule MtaaniWeb.MapLive do
           <%= for place <- Enum.take(@places, 4) do %>
             <div class="sight-card" phx-click="place_selected" phx-value-place_id={place.id}>
               <div class="sight-img" style="background: #d1fae5">
-                {case place.category do
-                  "restaurant" -> "🍽️"
-                  "hotel" -> "🏨"
-                  "attraction" -> "✨"
-                  "cafe" -> "☕"
-                  _ -> "📍"
-                end}
+                <%= case place.category do %>
+                  <% "restaurant" -> %>
+                    🍽️
+                  <% "hotel" -> %>
+                    🏨
+                  <% "attraction" -> %>
+                    ✨
+                  <% "cafe" -> %>
+                    ☕
+                  <% _ -> %>
+                    📍
+                <% end %>
               </div>
               
               <div class="sight-info">
@@ -540,41 +579,37 @@ defmodule MtaaniWeb.MapLive do
         </div>
         
         <div class="guide-scroll">
-          <div class="guide-card">
-            <div class="guide-av" style="background: #10b981">NB</div>
-            
-            <div class="guide-info">
-              <div class="guide-name">Njoroge B.</div>
-              
-              <div class="guide-area">CBD · Karen · Ngong</div>
-              
-              <div class="guide-status">● Available now</div>
+          <%= if Enum.empty?(@nearby_guides) do %>
+            <div class="text-center text-gray-500 py-4 w-full">
+              <p class="text-xs">No active guides nearby</p>
             </div>
-          </div>
-          
-          <div class="guide-card">
-            <div class="guide-av" style="background: #3b82f6">WN</div>
-            
-            <div class="guide-info">
-              <div class="guide-name">Wanjiru N.</div>
-              
-              <div class="guide-area">Westlands · Parklands</div>
-              
-              <div class="guide-status">● Available now</div>
-            </div>
-          </div>
-          
-          <div class="guide-card">
-            <div class="guide-av" style="background: #8b5cf6">KO</div>
-            
-            <div class="guide-info">
-              <div class="guide-name">Kofi A.</div>
-              
-              <div class="guide-area">Kilimani · Lavington</div>
-              
-              <div class="guide-status" style="color: #f59e0b">◐ In 2 hrs</div>
-            </div>
-          </div>
+          <% else %>
+            <%= for guide <- @nearby_guides do %>
+              <div
+                class="guide-card"
+                phx-click="navigate"
+                phx-value-page={"profile/#{guide.username}"}
+              >
+                <div class="guide-av" style={"background: #{get_avatar_color(guide.id)}"}>
+                  {guide.initials}
+                </div>
+                
+                <div class="guide-info">
+                  <div class="guide-name">{guide.name}</div>
+                  
+                  <div class="guide-area">{guide.area}</div>
+                  
+                  <div class="guide-status">
+                    <%= if guide.availability_status == "online" do %>
+                      ● Available now
+                    <% else %>
+                      ◐ Offline
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
         </div>
       </div>
       
@@ -762,36 +797,8 @@ defmodule MtaaniWeb.MapLive do
       </div>
       
     <!-- Bottom Navigation -->
-      <div class="nav-bar">
-        <div class="nav-item" phx-click="navigate" phx-value-page="home">
-          <div class="nav-icon">🏠</div>
-          
-          <div class="nav-label">Home</div>
-        </div>
-        
-        <div class="nav-item active" phx-click="navigate" phx-value-page="map">
-          <div class="nav-icon">🗺️</div>
-          
-          <div class="nav-label" style="color: #10b981; font-weight: 500">Map</div>
-        </div>
-        
-        <div class="nav-item" phx-click="navigate" phx-value-page="chat">
-          <div class="nav-icon">💬</div>
-          
-          <div class="nav-label">Chat</div>
-        </div>
-        
-        <div class="nav-item" phx-click="navigate" phx-value-page="groups">
-          <div class="nav-icon">👥</div>
-          
-          <div class="nav-label">Groups</div>
-        </div>
-        
-        <div class="nav-item" phx-click="navigate" phx-value-page="plan">
-          <div class="nav-icon">🗓</div>
-          
-          <div class="nav-label">Plan</div>
-        </div>
+      <div class="absolute bottom-0 left-0 right-0 z-20">
+        <BottomNav.bottom_nav active="map" />
       </div>
     </div>
     """
