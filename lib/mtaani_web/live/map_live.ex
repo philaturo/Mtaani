@@ -37,6 +37,7 @@ defmodule MtaaniWeb.MapLive do
         road_works: false
       })
       |> assign(:map_style, "explore")
+      |> assign(:nearby_guides, [])
 
     {:ok, socket}
   end
@@ -49,7 +50,12 @@ defmodule MtaaniWeb.MapLive do
   @impl true
   def handle_event("user_location_update", %{"lat" => lat, "lng" => lng}, socket) do
     socket = assign(socket, :user_location, %{lat: lat, lng: lng})
-    {:noreply, socket |> load_nearby_places(lat, lng) |> load_activity_zones(lat, lng)}
+
+    {:noreply,
+     socket
+     |> load_nearby_places(lat, lng)
+     |> load_activity_zones(lat, lng)
+     |> load_nearby_guides(lat, lng)}
   end
 
   @impl true
@@ -236,6 +242,38 @@ defmodule MtaaniWeb.MapLive do
       _ ->
         "PA"
     end
+  end
+
+  defp get_initials(name) do
+    name
+    |> String.split()
+    |> Enum.take(2)
+    |> Enum.map(&String.first/1)
+    |> Enum.join("")
+    |> String.upcase()
+  end
+
+  defp load_nearby_guides(socket, lat, lng) do
+    guides = Mtaani.Accounts.get_nearby_guides(lat, lng, 10)
+
+    formatted_guides =
+      Enum.map(guides, fn user ->
+        %{
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          initials: get_initials(user.name),
+          profile_photo_url: user.profile_photo_url,
+          rating: user.guide.rating,
+          total_tours: user.guide.total_tours,
+          hourly_rate: user.guide.hourly_rate,
+          availability_status: user.guide.availability_status,
+          languages: user.guide.languages,
+          area: user.location || "Nairobi Area"
+        }
+      end)
+
+    assign(socket, :nearby_guides, formatted_guides)
   end
 
   defp get_tab_class(current_filter, category) do
