@@ -33,6 +33,7 @@ defmodule MtaaniWeb.SessionController do
     end
   end
 
+  @spec delete(Plug.Conn.t(), any()) :: Plug.Conn.t()
   def delete(conn, _params) do
     conn
     |> configure_session(drop: true)
