@@ -8,6 +8,7 @@ defmodule Mtaani.Accounts do
   alias Mtaani.Social.Connection
   alias Mtaani.Social.UserPhoto
   alias Mtaani.Social.UserAlbum
+  alias Mtaani.Accounts.Guide
   import Ecto.Query
 
   # ============ PHONE FORMATTING ============
@@ -69,6 +70,105 @@ defmodule Mtaani.Accounts do
   """
   def get_user_by_username(username) do
     Repo.get_by(User, username: username)
+  end
+
+  # ============ GUIDE MANAGEMENT ============
+
+  @doc """
+  Get nearby guides based on user location.
+  """
+  def get_nearby_guides(lat, lng, radius_km \\ 10) do
+    query =
+      from(u in User,
+        join: g in Guide,
+        on: u.id == g.user_id,
+        where: u.is_guide == true,
+        where: g.availability_status == "online",
+        where: g.verification_status == "verified",
+        where: not is_nil(u.location_lat) and not is_nil(u.location_lng),
+        where:
+          fragment(
+            "earth_distance(ll_to_earth(?, ?), ll_to_earth(?, ?)) <= ?",
+            u.location_lat,
+            u.location_lng,
+            ^lat,
+            ^lng,
+            ^(radius_km * 1000)
+          ),
+        order_by: [
+          asc:
+            fragment(
+              "earth_distance(ll_to_earth(?, ?), ll_to_earth(?, ?))",
+              u.location_lat,
+              u.location_lng,
+              ^lat,
+              ^lng
+            )
+        ],
+        limit: 10,
+        preload: [guide: :user]
+      )
+
+    Repo.all(query)
+  end
+
+  @doc """
+  Get count of nearby guides.
+  """
+  def get_nearby_guides_count(lat, lng, radius_km \\ 10) do
+    query =
+      from(u in User,
+        join: g in Guide,
+        on: u.id == g.user_id,
+        where: u.is_guide == true,
+        where: g.availability_status == "online",
+        where: g.verification_status == "verified",
+        where: not is_nil(u.location_lat) and not is_nil(u.location_lng),
+        where:
+          fragment(
+            "earth_distance(ll_to_earth(?, ?), ll_to_earth(?, ?)) <= ?",
+            u.location_lat,
+            u.location_lng,
+            ^lat,
+            ^lng,
+            ^(radius_km * 1000)
+          )
+      )
+
+    Repo.aggregate(query, :count, :id)
+  end
+
+  @doc """
+  Create or update a guide profile.
+  """
+  def upsert_guide(user_id, attrs) do
+    case Repo.get_by(Guide, user_id: user_id) do
+      nil ->
+        %Guide{user_id: user_id}
+        |> Guide.changeset(attrs)
+        |> Repo.insert()
+
+      guide ->
+        guide
+        |> Guide.changeset(attrs)
+        |> Repo.update()
+    end
+  end
+
+  @doc """
+  Get guide by user ID.
+  """
+  def get_guide_by_user_id(user_id) do
+    Repo.get_by(Guide, user_id: user_id)
+  end
+
+  @doc """
+  Update user profile with complete profile fields (for profile setup).
+  """
+  def update_complete_profile(user, attrs) do
+    user
+    |> User.complete_profile_changeset(attrs)
+    |> Repo.update()
   end
 
   # ============ AUTHENTICATION ============
