@@ -32,6 +32,13 @@ defmodule Mtaani.Accounts.User do
     field(:location_lng, :float)
     field(:last_active, :utc_datetime)
 
+    # Profile tracking fields (added by migration)
+    field(:trips_count, :integer, default: 0)
+    field(:counties_visited_count, :integer, default: 0)
+    field(:tours_led, :integer, default: 0)
+    field(:travel_vibes, {:array, :string}, default: [])
+    field(:id_verified, :boolean, default: false)
+
     # Associations
     has_one(:guide, Mtaani.Accounts.Guide)
 
