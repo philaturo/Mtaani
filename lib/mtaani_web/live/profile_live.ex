@@ -322,51 +322,47 @@ defmodule MtaaniWeb.ProfileLive do
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-[var(--color-background-tertiary)]">
-      <div class="max-w-md mx-auto relative">
-        <!-- Cover Photo -->
-        <div class="relative h-44 bg-gradient-to-r from-[#064e3b] via-[#065f46] to-[#059669]">
-          <%= if @profile_user.cover_photo_url do %>
-            <img src={@profile_user.cover_photo_url} class="w-full h-full object-cover" />
-          <% end %>
-          
-          <div class="absolute top-3 left-3 right-3 flex justify-between">
-            <button
-              phx-click="navigate"
-              phx-value-to="/home"
-              class="w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm text-white"
-            >
-              ←
-            </button>
-            <div class="flex gap-2">
-              <button class="w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm text-white">🔍</button>
-              <%= if @is_own_profile do %>
-                <button
-                  phx-click="open_edit_modal"
-                  class="w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm text-white"
-                >
-                  ✏️
-                </button>
-              <% end %>
+      <div class="pscroll" id="mainScroll">
+        <!-- COVER AREA -->
+        <div class="cover-wrap">
+          <div class="cover-img">
+            <%= if @profile_user.cover_photo_url do %>
+              <img src={@profile_user.cover_photo_url} class="w-full h-full object-cover" />
+            <% end %>
+            
+            <div class="cover-pattern"></div>
+            
+            <div class="absolute inset-0 flex items-center justify-center text-6xl opacity-12">
+              🦁🌄🌿🏔
             </div>
+            
+            <div class="cover-top-actions">
+              <button phx-click="navigate" phx-value-to="/home" class="cta-back">←</button>
+              <div class="cta-right">
+                <button class="cta-btn">🔍</button>
+                <%= if @is_own_profile do %>
+                  <button phx-click="open_edit_modal" class="cta-btn">✏️</button>
+                <% end %>
+                 <button class="cta-btn">⋯</button>
+              </div>
+            </div>
+            
+            <div class="cover-location-tag">
+              <div class="clt-icon">📍</div>
+              
+              <div class="clt-text">Last seen: {@profile_user.location || "Nairobi, Kenya"}</div>
+            </div>
+            
+            <%= if @is_own_profile do %>
+              <button phx-click="upload_cover_photo" class="cover-edit-badge">📷 Edit cover</button>
+            <% end %>
           </div>
-          
-          <%= if @is_own_profile do %>
-            <button
-              phx-click="upload_cover_photo"
-              class="absolute bottom-3 right-3 bg-black/40 backdrop-blur-sm rounded-full px-3 py-1.5 text-xs text-white"
-            >
-              📷 Edit cover
-            </button>
-          <% end %>
         </div>
         
-    <!-- Avatar -->
-        <div class="px-4 -mt-9 relative z-10 flex justify-between items-end">
-          <div class="relative">
-            <div
-              class="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-medium border-3 border-[var(--color-background-primary)]"
-              style={"background: #{@avatar_color}"}
-            >
+    <!-- AVATAR ROW -->
+        <div class="avatar-row">
+          <div class="av-wrap">
+            <div class="av-circle" style={"background: #{@avatar_color}"}>
               <%= if @profile_user.profile_photo_url do %>
                 <img
                   src={@profile_user.profile_photo_url}
@@ -377,142 +373,226 @@ defmodule MtaaniWeb.ProfileLive do
               <% end %>
               
               <%= if @is_own_profile do %>
-                <button
-                  phx-click="upload_profile_photo"
-                  class="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-verdant-forest border-2 border-white flex items-center justify-center text-xs"
-                >
-                  📷
-                </button>
+                <div class="av-edit">
+                  <div class="av-edit-inner">📷</div>
+                </div>
               <% end %>
             </div>
           </div>
           
-          <div class="flex gap-2 pb-1">
+          <div class="av-action-row">
             <%= if @is_own_profile do %>
-              <button
-                phx-click="open_edit_modal"
-                class="px-4 py-2 rounded-xl text-xs font-medium bg-verdant-forest text-white"
-              >
-                ✏ Edit profile
-              </button>
+              <button phx-click="open_edit_modal" class="av-btn primary">Edit profile</button>
             <% else %>
               <button
                 phx-click={if @is_following, do: "unfollow_user", else: "follow_user"}
-                class={"px-4 py-2 rounded-xl text-xs font-medium " <> if(@is_following, do: "bg-[var(--color-background-secondary)] border", else: "bg-verdant-forest text-white")}
+                class={if @is_following, do: "av-btn secondary", else: "av-btn primary"}
               >
                 {if @is_following, do: "Following", else: "Follow"}
               </button>
             <% end %>
+             <button phx-click="share_profile" class="av-btn secondary">Share</button>
+            <button phx-click="open_chat" class="av-btn icon-btn">⋯</button>
+          </div>
+        </div>
+        
+    <!-- IDENTITY BLOCK -->
+        <div class="identity">
+          <div class="id-name-row">
+            <div class="id-name">{@profile_user.name}</div>
             
-            <button
-              phx-click="share_profile"
-              class="px-4 py-2 rounded-xl text-xs font-medium bg-[var(--color-background-secondary)] border"
-            >
-              Share
-            </button>
-            <button
-              phx-click="open_chat"
-              class="w-9 h-9 rounded-xl bg-[var(--color-background-secondary)] border flex items-center justify-center"
-            >
-              💬
-            </button>
+            <%= if @profile_user.phone_verified do %>
+              <div class="id-verified">✓</div>
+            <% end %>
+          </div>
+          
+          <div class="id-handle">@{@profile_user.username}</div>
+          
+          <div class="id-bio">{@profile_user.bio || "No bio yet"}</div>
+          
+          <div class="id-tags">
+            <%= if @profile_user.traveler_type do %>
+              <div class="id-tag" style="background:#ecfdf5;color:#065f46">
+                🎒 {@profile_user.traveler_type}
+              </div>
+            <% end %>
+            
+            <%= for vibe <- (@profile_user.travel_vibes || []) |> Enum.take(3) do %>
+              <div
+                class="id-tag"
+                style="background:var(--color-background-secondary);color:var(--color-text-secondary)"
+              >
+                {vibe}
+              </div>
+            <% end %>
           </div>
         </div>
         
-    <!-- Identity -->
-        <div class="px-4 pt-3">
-          <h1 class="text-xl font-medium text-[var(--color-text-primary)]">{@profile_user.name}</h1>
-          
-          <p class="text-sm text-[var(--color-text-secondary)]">@{@profile_user.username}</p>
-          
-          <%= if @profile_user.bio do %>
-            <p class="text-sm text-[var(--color-text-primary)] mt-2">{@profile_user.bio}</p>
-          <% end %>
-        </div>
-        
-    <!-- Stats -->
-        <div class="mx-4 my-4 grid grid-cols-4 gap-0 border rounded-xl overflow-hidden bg-[var(--color-background-primary)]">
-          <div class="py-3 text-center border-r">
-            <div class="text-lg font-medium">{@stats.trips_count}</div>
-            <div class="text-[9px] text-[var(--color-text-secondary)]">Trips</div>
+    <!-- IDENTITY SIGNAL STRIP -->
+        <div class="identity-signals">
+          <div class="is-badge-row">
+            <%= if @profile_user.phone_verified do %>
+              <div class="is-badge is-badge-verified">
+                <div class="isb-icon">✓</div>
+                 <span>Verified member</span>
+              </div>
+            <% end %>
+            
+            <%= if @profile_user.traveler_type do %>
+              <div class="is-badge is-badge-traveler">
+                <div class="isb-icon">🎒</div>
+                 <span>{@profile_user.traveler_type}</span>
+              </div>
+            <% end %>
+            
+            <%= if (@stats.posts_count || 0) > 20 or (@stats.trips_count || 0) > 10 do %>
+              <div class="is-badge is-badge-contributor">
+                <div class="isb-icon">⭐</div>
+                 <span>Top contributor</span>
+              </div>
+            <% end %>
           </div>
           
-          <div class="py-3 text-center border-r">
-            <div class="text-lg font-medium">{@stats.counties_count}</div>
-            <div class="text-[9px] text-[var(--color-text-secondary)]">Counties</div>
-          </div>
-          
-          <div class="py-3 text-center border-r">
-            <div class="text-lg font-medium">{@stats.buddies_count}</div>
-            <div class="text-[9px] text-[var(--color-text-secondary)]">Buddies</div>
-          </div>
-          
-          <div class="py-3 text-center">
-            <div class="text-lg font-medium">{@stats.followers_count}</div>
-            <div class="text-[9px] text-[var(--color-text-secondary)]">Followers</div>
-          </div>
-        </div>
-        
-    <!-- Tabs -->
-        <div class="sticky top-0 z-10 bg-[var(--color-background-primary)] border-b">
-          <div class="flex">
-            <button
-              phx-click="switch_tab"
-              phx-value-tab="posts"
-              class={"flex-1 py-3 text-xs font-medium " <> if(@active_tab == "posts", do: "text-verdant-forest border-b-2 border-verdant-forest", else: "text-[var(--color-text-secondary)]")}
-            >
-              Posts
-            </button>
-            <button
-              phx-click="switch_tab"
-              phx-value-tab="places"
-              class={"flex-1 py-3 text-xs font-medium " <> if(@active_tab == "places", do: "text-verdant-forest border-b-2 border-verdant-forest", else: "text-[var(--color-text-secondary)]")}
-            >
-              Places
-            </button>
-            <button
-              phx-click="switch_tab"
-              phx-value-tab="photos"
-              class={"flex-1 py-3 text-xs font-medium " <> if(@active_tab == "photos", do: "text-verdant-forest border-b-2 border-verdant-forest", else: "text-[var(--color-text-secondary)]")}
-            >
-              Photos
-            </button>
-            <button
-              phx-click="switch_tab"
-              phx-value-tab="dna"
-              class={"flex-1 py-3 text-xs font-medium " <> if(@active_tab == "dna", do: "text-verdant-forest border-b-2 border-verdant-forest", else: "text-[var(--color-text-secondary)]")}
-            >
-              Travel DNA
-            </button>
-            <button
-              phx-click="switch_tab"
-              phx-value-tab="buddies"
-              class={"flex-1 py-3 text-xs font-medium " <> if(@active_tab == "buddies", do: "text-verdant-forest border-b-2 border-verdant-forest", else: "text-[var(--color-text-secondary)]")}
-            >
-              Buddies
-            </button>
+          <div class="is-meta-line">
+            <div class="is-meta-item">
+              <div class="is-meta-dot" style="background:#10b981"></div>
+               <span>Phone verified</span>
+            </div>
+            
+            <div class="is-meta-sep">·</div>
+            
+            <div class="is-meta-item">
+              <span>Member since {Calendar.strftime(@profile_user.inserted_at, "%b %Y")}</span>
+            </div>
           </div>
         </div>
         
-    <!-- Posts Panel -->
-        <div class={if(@active_tab != "posts", do: "hidden")}>
-          <div class="p-4 space-y-3">
+    <!-- STAT STRIP -->
+        <div class="stat-strip">
+          <div class="ss-item">
+            <div class="ss-val">{@stats.trips_count}</div>
+            
+            <div class="ss-label">Trips</div>
+            
+            <div class="ss-sub">completed</div>
+          </div>
+          
+          <div class="ss-item">
+            <div class="ss-val">{@stats.counties_count}</div>
+            
+            <div class="ss-label">Counties</div>
+            
+            <div class="ss-sub">of 47</div>
+          </div>
+          
+          <div class="ss-item">
+            <div class="ss-val">{@stats.buddies_count}</div>
+            
+            <div class="ss-label">Buddies</div>
+            
+            <div class="ss-sub">connected</div>
+          </div>
+          
+          <div class="ss-item">
+            <div class="ss-val">{@stats.followers_count}</div>
+            
+            <div class="ss-label">Followers</div>
+            
+            <div class="ss-sub">following {@stats.following_count}</div>
+          </div>
+        </div>
+        
+    <!-- TAB NAVIGATION -->
+        <div class="tab-nav">
+          <button
+            phx-click="switch_tab"
+            phx-value-tab="posts"
+            class={["tab", @active_tab == "posts" && "on"]}
+          >
+            Posts
+          </button>
+          
+          <button
+            phx-click="switch_tab"
+            phx-value-tab="places"
+            class={["tab", @active_tab == "places" && "on"]}
+          >
+            Places
+          </button>
+          
+          <button
+            phx-click="switch_tab"
+            phx-value-tab="photos"
+            class={["tab", @active_tab == "photos" && "on"]}
+          >
+            Photos
+          </button>
+          
+          <button
+            phx-click="switch_tab"
+            phx-value-tab="dna"
+            class={["tab", @active_tab == "dna" && "on"]}
+          >
+            Travel DNA
+          </button>
+          
+          <button
+            phx-click="switch_tab"
+            phx-value-tab="buddies"
+            class={["tab", @active_tab == "buddies" && "on"]}
+          >
+            Buddies
+          </button>
+        </div>
+        
+    <!-- POSTS PANEL -->
+        <div class={["panel", @active_tab == "posts" && "show"]}>
+          <div class="posts-panel">
+            <%= if @is_own_profile do %>
+              <div class="make-post-bar">
+                <div class="mpb-av">{@avatar_initials}</div>
+                
+                <div class="mpb-input">What's on your mind, {@profile_user.name}?</div>
+                
+                <div class="mpb-icons">
+                  <div class="mpb-icon">📷</div>
+                  
+                  <div class="mpb-icon">📍</div>
+                </div>
+              </div>
+            <% end %>
+            
             <%= for post <- @posts do %>
-              <div class="bg-[var(--color-background-primary)] rounded-xl border p-3">
-                <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 rounded-full bg-verdant-forest flex items-center justify-center text-white text-xs">
-                    {get_initials(post.user.name)}
+              <div class="post-card">
+                <div class="pc-header">
+                  <div class="pch-av">{get_initials(post.user.name)}</div>
+                  
+                  <div class="pch-info">
+                    <div class="pch-name">{post.user.name}</div>
+                    
+                    <div class="pch-time">{time_ago(post.inserted_at)}</div>
                   </div>
                   
-                  <div>
-                    <div class="text-sm font-medium">{post.user.name}</div>
-                    <div class="text-xs text-[var(--color-text-secondary)]">
-                      {time_ago(post.inserted_at)}
-                    </div>
-                  </div>
+                  <div class="pch-more">⋯</div>
                 </div>
                 
-                <div class="mt-2 text-sm">{post.content}</div>
+                <div class="pc-body">{post.content}</div>
+                
+                <div class="pc-reactions">
+                  <div class="prc">❤️ {post.likes_count}</div>
+                  
+                  <div class="prc">💬 {post.comments_count}</div>
+                  
+                  <div class="prc">🔁 {post.reposts_count}</div>
+                </div>
+                
+                <div class="pc-actions">
+                  <div class="pca">❤️ Like</div>
+                  
+                  <div class="pca">💬 Comment</div>
+                  
+                  <div class="pca">🔁 Repost</div>
+                </div>
               </div>
             <% end %>
             
@@ -522,19 +602,83 @@ defmodule MtaaniWeb.ProfileLive do
           </div>
         </div>
         
-    <!-- Places Panel -->
-        <div class={if(@active_tab != "places", do: "hidden")}>
-          <div class="p-4 text-center text-[var(--color-text-secondary)]">
-            Places tab - Add visited places to see them here
+    <!-- PLACES PANEL -->
+        <div class={["panel", @active_tab == "places" && "show"]}>
+          <div class="places-panel">
+            <div class="county-strip">
+              <div class="cs-map">🗺️</div>
+              
+              <div class="cs-body">
+                <div class="cs-title">Kenya Explorer Progress</div>
+                
+                <div class="cs-track">
+                  <div class="cs-fill" style={"width: #{(@stats.counties_count / 47) * 100}%"}></div>
+                </div>
+                
+                <div class="cs-sub">
+                  {@stats.counties_count} of 47 counties visited · Earn "Kenya Explorer" at 30
+                </div>
+              </div>
+              
+              <div class="cs-count">{@stats.counties_count}</div>
+            </div>
+            
+            <div class="sec-head">
+              <div class="sec-title">Recent visits</div>
+              
+              <div class="sec-action">See all</div>
+            </div>
+            
+            <div class="place-grid">
+              <%= for visit <- Enum.take(@visited_places, 4) do %>
+                <div class="pl-card">
+                  <div class="pl-img" style="background:#d1fae5">
+                    🦁<div class="pl-badge" style="background:#ecfdf5;color:#065f46">Visited</div>
+                  </div>
+                  
+                  <div class="pl-body">
+                    <div class="pl-name">{visit.place_name || "Place"}</div>
+                    
+                    <div class="pl-meta">{visit.county || "Kenya"}</div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
           </div>
         </div>
         
-    <!-- Photos Panel -->
-        <div class={if(@active_tab != "photos", do: "hidden")}>
-          <div class="p-4">
-            <div class="grid grid-cols-3 gap-1">
+    <!-- PHOTOS PANEL -->
+        <div class={["panel", @active_tab == "photos" && "show"]}>
+          <div class="photos-panel">
+            <div class="sec-head">
+              <div class="sec-title">Albums</div>
+              
+              <div class="sec-action">New album</div>
+            </div>
+            
+            <div class="photo-album-row">
+              <%= for album <- @albums do %>
+                <div class="album-card">
+                  <div class="ac-img" style="background:#d1fae5">🦁</div>
+                  
+                  <div class="ac-body">
+                    <div class="ac-name">{album.name}</div>
+                    
+                    <div class="ac-count">{length(album.photos)} photos</div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+            
+            <div class="sec-head">
+              <div class="sec-title">All photos · {length(@recent_photos)}</div>
+              
+              <div class="sec-action">Add photo</div>
+            </div>
+            
+            <div class="photo-grid-3">
               <%= for photo <- Enum.take(@recent_photos, 9) do %>
-                <div class="aspect-square bg-[var(--color-background-secondary)]">
+                <div class="pg3-item" style="background:#d1fae5">
                   <img src={photo.url} class="w-full h-full object-cover" />
                 </div>
               <% end %>
@@ -546,41 +690,218 @@ defmodule MtaaniWeb.ProfileLive do
           </div>
         </div>
         
-    <!-- Travel DNA Panel -->
-        <div class={if(@active_tab != "dna", do: "hidden")}>
-          <div class="p-4">
-            <div class="bg-[var(--color-background-primary)] rounded-xl border p-4">
-              <div class="flex justify-between items-center">
-                <div>
-                  <div class="text-xs text-[var(--color-text-secondary)]">Community standing</div>
-                  <div class="font-medium">{@trust.level}</div>
-                </div>
-                
-                <div class="relative w-11 h-11">
-                  <div class="absolute inset-0 flex items-center justify-center text-xs font-medium">
-                    {@trust.score}%
+    <!-- TRAVEL DNA PANEL -->
+        <div class={["panel", @active_tab == "dna" && "show"]}>
+          <div class="dna-panel">
+            <!-- Trust Breakdown Card -->
+            <div class="trust-breakdown-card">
+              <div class="tbc-header">
+                <div class="tbc-left">
+                  <div
+                    class="tbc-avatar-ring"
+                    style={"background: conic-gradient(#10b981 0deg #{@trust.arc_deg}deg, var(--color-border-tertiary) #{@trust.arc_deg}deg 360deg)"}
+                  >
+                    <div class="tbc-avatar-inner">{@avatar_initials}</div>
+                  </div>
+                  
+                  <div class="tbc-title-group">
+                    <div class="tbc-label">Community standing</div>
+                    
+                    <div class="tbc-level">{@trust.level}</div>
                   </div>
                 </div>
+                
+                <div class="tbc-pct-wrap">
+                  <svg class="tbc-ring-svg" viewBox="0 0 44 44">
+                    <circle class="tbc-ring-bg" cx="22" cy="22" r="18" /><circle
+                      class="tbc-ring-fill"
+                      cx="22"
+                      cy="22"
+                      r="18"
+                      stroke-dasharray="113.1"
+                      stroke-dashoffset={@trust.stroke_dashoffset}
+                    />
+                  </svg>
+                  
+                  <div class="tbc-pct-label">{@trust.score}%</div>
+                </div>
               </div>
+              
+              <div class="tbc-signals">
+                <%= for signal <- @trust.signals do %>
+                  <div class={[
+                    "tbc-signal",
+                    signal.completed && "done",
+                    !signal.completed && "pending"
+                  ]}>
+                    <div class={["tbc-signal-icon", !signal.completed && "tbc-icon-pending"]}>
+                      {if signal.completed, do: "✓", else: "○"}
+                    </div>
+                    
+                    <div class="tbc-signal-body">
+                      <div class="tbc-signal-name">
+                        {case signal.key do
+                          :phone_verified -> "Phone verified"
+                          :profile_complete -> "Profile complete"
+                          :trips_completed -> "Trips completed"
+                          :community_active -> "Active community member"
+                          :trips_led -> "Led group trips"
+                          :id_verified -> "ID verification"
+                        end}
+                      </div>
+                      
+                      <div class="tbc-signal-sub">
+                        {signal.description || "+#{signal.points} pts"}
+                      </div>
+                    </div>
+                    
+                    <div class={["tbc-signal-pts", !signal.completed && "tbc-pts-pending"]}>
+                      +{signal.points}
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+              
+              <div class="tbc-next">
+                <div class="tbc-next-label">
+                  Next level: <strong>{@trust.next_level}</strong> at {@trust.next_threshold}%
+                </div>
+                
+                <div class="tbc-next-track">
+                  <div class="tbc-next-fill" style={"width: #{@trust.score}%"}></div>
+                </div>
+                
+                <div class="tbc-next-sub">{@trust.points_needed} points to next level</div>
+              </div>
+            </div>
+            
+    <!-- Travel DNA Details -->
+            <div class="dna-card">
+              <div class="dna-section">
+                <div class="dna-label">TRAVELER TYPE</div>
+                
+                <div class="dna-value">🎒 {@profile_user.traveler_type || "Traveler"}</div>
+              </div>
+              
+              <div class="dna-divider"></div>
+              
+              <div class="dna-section">
+                <div class="dna-label">TRAVEL STYLE</div>
+                
+                <div class="dna-tags">
+                  <%= for vibe <- @profile_user.travel_vibes || [] do %>
+                    <div class="dna-tag" style="background:#ecfdf5;color:#065f46">{vibe}</div>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+            
+    <!-- Travel Badges -->
+            <div class="sec-head">
+              <div class="sec-title">Travel badges</div>
+              
+              <div class="sec-action">See all</div>
+            </div>
+            
+            <div class="badges-scroll">
+              <%= for user_badge <- @badges do %>
+                <% badge = user_badge.badge %>
+                <div class="badge-card">
+                  <div class="badge-icon-wrap" style="background:#ecfdf5">{badge.icon || "🏅"}</div>
+                  
+                  <div class="badge-name">{badge.name}</div>
+                  
+                  <div class="badge-desc">{badge.description}</div>
+                </div>
+              <% end %>
+            </div>
+            
+    <!-- About Section -->
+            <div class="dna-card">
+              <div class="text-[11px] font-medium text-[var(--color-text-secondary)] uppercase tracking-wide mb-2">
+                ABOUT
+              </div>
+              
+              <%= if @profile_user.location do %>
+                <div class="info-row">
+                  <div class="ir-icon" style="background:#ecfdf5">📍</div>
+                  
+                  <div class="ir-body">
+                    <div class="ir-label">Location</div>
+                    
+                    <div class="ir-value">{@profile_user.location}</div>
+                  </div>
+                </div>
+              <% end %>
+              
+              <div class="info-row">
+                <div class="ir-icon" style="background:#eff6ff">📅</div>
+                
+                <div class="ir-body">
+                  <div class="ir-label">Member since</div>
+                  
+                  <div class="ir-value">{Calendar.strftime(@profile_user.inserted_at, "%B %Y")}</div>
+                </div>
+              </div>
+              
+              <%= if @profile_user.website do %>
+                <div class="info-row">
+                  <div class="ir-icon" style="background:#fdf4ff">🌐</div>
+                  
+                  <div class="ir-body">
+                    <div class="ir-label">Website</div>
+                    
+                    <div class="ir-value" style="color:#3b82f6">{@profile_user.website}</div>
+                  </div>
+                </div>
+              <% end %>
             </div>
           </div>
         </div>
         
-    <!-- Buddies Panel -->
-        <div class={if(@active_tab != "buddies", do: "hidden")}>
-          <div class="p-4 space-y-2">
+    <!-- BUDDIES PANEL -->
+        <div class={["panel", @active_tab == "buddies" && "show"]}>
+          <div class="buddies-panel">
+            <div class="sec-head">
+              <div class="sec-title">Suggested travel buddies</div>
+              
+              <div class="sec-action">See all</div>
+            </div>
+            
+            <div class="suggested-strip">
+              <%= for buddy <- @suggested_buddies do %>
+                <div class="sug-card">
+                  <div class="sc-av" style={"background: #{get_avatar_color(buddy.id)}"}>
+                    {get_initials(buddy.name)}
+                  </div>
+                  
+                  <div class="sc-name">{buddy.name}</div>
+                  
+                  <div class="sc-sub">{buddy.traveler_type || "Traveler"}</div>
+                   <button phx-click="follow_user" class="sc-btn">Connect</button>
+                </div>
+              <% end %>
+            </div>
+            
+            <div class="sec-head">
+              <div class="sec-title">Your travel buddies · {@stats.buddies_count}</div>
+              
+              <div class="sec-action">Find more</div>
+            </div>
+            
             <%= for buddy <- @connected_buddies do %>
-              <div class="bg-[var(--color-background-primary)] rounded-xl border p-3 flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-verdant-forest flex items-center justify-center text-white text-xs">
+              <div class="buddy-row">
+                <div class="br-av" style={"background: #{get_avatar_color(buddy.id)}"}>
                   {get_initials(buddy.name)}
+                  <div class="br-online"></div>
                 </div>
                 
-                <div>
-                  <div class="text-sm font-medium">{buddy.name}</div>
-                  <div class="text-xs text-[var(--color-text-secondary)]">
-                    {buddy.location || "Kenya"}
-                  </div>
+                <div class="br-body">
+                  <div class="br-name">{buddy.name}</div>
+                  
+                  <div class="br-sub">{buddy.location || "Kenya"}</div>
                 </div>
+                 <button class="br-btn connected">Connected</button>
               </div>
             <% end %>
             
@@ -591,116 +912,131 @@ defmodule MtaaniWeb.ProfileLive do
         </div>
       </div>
       
-    <!-- Edit Modal -->
-      <%= if @edit_modal_open do %>
-        <div class="fixed inset-0 bg-black/50 flex items-end z-50" phx-click="close_edit_modal">
-          <div
-            class="bg-[var(--color-background-primary)] rounded-t-2xl w-full max-h-[88%] overflow-y-auto"
-            phx-click="preventDefault"
-          >
-            <div class="w-8 h-1 bg-[var(--color-border-secondary)] rounded-full mx-auto mt-3 mb-2">
+    <!-- EDIT PROFILE MODAL -->
+      <div class={["modal-bg", @edit_modal_open && "open"]} phx-click="close_edit_modal">
+        <div class="edit-sheet" phx-click="preventDefault">
+          <div class="es-handle"></div>
+          
+          <div class="es-topbar">
+            <div class="es-title">Edit profile</div>
+             <button type="button" phx-click="close_edit_modal" class="es-save">Save</button>
+          </div>
+          
+          <div class="es-cover-edit">
+            <div class="es-cover-cta">📷 Change cover photo</div>
+            
+            <div class="es-av-edit">
+              {@avatar_initials}
+              <div class="es-av-badge">📷</div>
+            </div>
+          </div>
+          
+          <form phx-submit="update_profile" class="es-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="es-field">
+                <div class="ef-label">Name</div>
+                
+                <input type="text" name="profile[name]" value={@profile_user.name} class="ef-input" />
+              </div>
             </div>
             
-            <div class="flex justify-between px-5 pb-3 border-b">
-              <h2 class="text-base font-medium">Edit profile</h2>
+            <div class="es-field">
+              <div class="ef-label">Username</div>
               
-              <button
-                type="button"
-                phx-click="close_edit_modal"
-                class="text-sm font-medium text-verdant-forest"
-              >
-                Save
+              <input
+                type="text"
+                name="profile[username]"
+                value={"@" <> @profile_user.username}
+                disabled
+                class="ef-input opacity-70"
+              />
+            </div>
+            
+            <div class="es-field">
+              <div class="ef-label">Bio</div>
+               <textarea name="profile[bio]" rows="3" class="ef-input ef-textarea"><%= @profile_user.bio || "" %></textarea>
+              <div class="ef-char">{String.length(@profile_user.bio || "")} / 160</div>
+            </div>
+            
+            <div class="es-field">
+              <div class="ef-label">Location</div>
+              
+              <input
+                type="text"
+                name="profile[location]"
+                value={@profile_user.location || ""}
+                class="ef-input"
+              />
+            </div>
+            
+            <div class="es-field">
+              <div class="ef-label">Website</div>
+              
+              <input
+                type="text"
+                name="profile[website]"
+                value={@profile_user.website || ""}
+                class="ef-input"
+              />
+            </div>
+            
+            <div class="es-field">
+              <div class="ef-label">Traveler type</div>
+              
+              <select name="profile[traveler_type]" class="ef-input">
+                <option value="Traveler" selected={@profile_user.traveler_type == "Traveler"}>
+                  🎒 Traveler
+                </option>
+                
+                <option value="Local guide" selected={@profile_user.traveler_type == "Local guide"}>
+                  🧭 Local guide
+                </option>
+                
+                <option
+                  value="Local resident"
+                  selected={@profile_user.traveler_type == "Local resident"}
+                >
+                  🏡 Local resident
+                </option>
+                
+                <option value="Business" selected={@profile_user.traveler_type == "Business"}>
+                  🏢 Business
+                </option>
+              </select>
+            </div>
+            
+            <div class="es-field">
+              <div class="ef-label">Travel vibes (comma separated)</div>
+              
+              <input
+                type="text"
+                name="profile[travel_vibes]"
+                value={Enum.join(@profile_user.travel_vibes || [], ", ")}
+                class="ef-input"
+              />
+            </div>
+            
+            <div class="es-section-label">PRIVACY SETTINGS</div>
+            
+            <div class="es-privacy-row">
+              <div class="epr-info">
+                <div class="epr-label">Public profile</div>
+                
+                <div class="epr-sub">Anyone can view your trips and photos</div>
+              </div>
+              
+              <button type="button" class={["toggle", @profile_user.is_private && "on"]}>
+                <div class={[
+                  "w-4 h-4 rounded-full bg-white shadow-sm transition-transform mt-0.5",
+                  @profile_user.is_private && "translate-x-5",
+                  !@profile_user.is_private && "translate-x-0.5"
+                ]}>
+                </div>
               </button>
             </div>
-            
-            <form phx-submit="update_profile" class="pb-8">
-              <div class="relative h-24 bg-gradient-to-r from-[#064e3b] to-[#065f46]"></div>
-              
-              <div class="px-5 pt-12 space-y-4">
-                <div>
-                  <label class="text-xs text-[var(--color-text-secondary)]">Name</label>
-                  <input
-                    type="text"
-                    name="profile[name]"
-                    value={@profile_user.name}
-                    class="w-full mt-1 px-3 py-2 text-sm bg-[var(--color-background-secondary)] border rounded-xl"
-                  />
-                </div>
-                
-                <div>
-                  <label class="text-xs text-[var(--color-text-secondary)]">Bio</label><textarea
-                    name="profile[bio]"
-                    rows="3"
-                    class="w-full mt-1 px-3 py-2 text-sm bg-[var(--color-background-secondary)] border rounded-xl"
-                  ><%= @profile_user.bio || "" %></textarea>
-                </div>
-                
-                <div>
-                  <label class="text-xs text-[var(--color-text-secondary)]">Location</label>
-                  <input
-                    type="text"
-                    name="profile[location]"
-                    value={@profile_user.location || ""}
-                    class="w-full mt-1 px-3 py-2 text-sm bg-[var(--color-background-secondary)] border rounded-xl"
-                  />
-                </div>
-                
-                <div>
-                  <label class="text-xs text-[var(--color-text-secondary)]">Website</label>
-                  <input
-                    type="text"
-                    name="profile[website]"
-                    value={@profile_user.website || ""}
-                    class="w-full mt-1 px-3 py-2 text-sm bg-[var(--color-background-secondary)] border rounded-xl"
-                  />
-                </div>
-                
-                <div>
-                  <label class="text-xs text-[var(--color-text-secondary)]">Traveler type</label>
-                  <select
-                    name="profile[traveler_type]"
-                    class="w-full mt-1 px-3 py-2 text-sm bg-[var(--color-background-secondary)] border rounded-xl"
-                  >
-                    <option value="Traveler" selected={@profile_user.traveler_type == "Traveler"}>
-                      Traveler
-                    </option>
-                    
-                    <option
-                      value="Local guide"
-                      selected={@profile_user.traveler_type == "Local guide"}
-                    >
-                      Local guide
-                    </option>
-                    
-                    <option
-                      value="Local resident"
-                      selected={@profile_user.traveler_type == "Local resident"}
-                    >
-                      Local resident
-                    </option>
-                    
-                    <option value="Business" selected={@profile_user.traveler_type == "Business"}>
-                      Business
-                    </option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label class="text-xs text-[var(--color-text-secondary)]">
-                    Travel vibes (comma separated)
-                  </label>
-                  <input
-                    type="text"
-                    name="profile[travel_vibes]"
-                    value={Enum.join(@profile_user.travel_vibes || [], ", ")}
-                    class="w-full mt-1 px-3 py-2 text-sm bg-[var(--color-background-secondary)] border rounded-xl"
-                  />
-                </div>
-              </div>
-            </form>
-          </div>
+          </form>
         </div>
-      <% end %>
+      </div>
     </div>
     """
   end
