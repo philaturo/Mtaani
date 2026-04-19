@@ -207,12 +207,12 @@ defmodule MtaaniWeb.RegisterLive do
   end
 
   @impl true
-  def handle_event("update_first_name", %{"value" => value}, socket) do
+  def handle_event("update_first_name", %{"first_name" => value}, socket) do
     {:noreply, assign(socket, :first_name, value)}
   end
 
   @impl true
-  def handle_event("update_last_name", %{"value" => value}, socket) do
+  def handle_event("update_last_name", %{"last_name" => value}, socket) do
     {:noreply, assign(socket, :last_name, value)}
   end
 
@@ -229,14 +229,6 @@ defmodule MtaaniWeb.RegisterLive do
       end
 
     {:noreply, socket |> assign(:username, value) |> assign(:errors, errors)}
-  end
-
-  def handle_event("update_first_name", %{"first_name" => value}, socket) do
-    {:noreply, assign(socket, :first_name, value)}
-  end
-
-  def handle_event("update_last_name", %{"last_name" => value}, socket) do
-    {:noreply, assign(socket, :last_name, value)}
   end
 
   @impl true
