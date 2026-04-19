@@ -7,6 +7,10 @@ defmodule MtaaniWeb.ProfileSetupLive do
 
   @impl true
   def mount(_params, session, socket) do
+    if Phoenix.LiveView.connected?(socket) do
+      send(self(), :request_geolocation)
+    end
+
     user_id = session["user_id"]
 
     if is_nil(user_id) do
@@ -34,6 +38,11 @@ defmodule MtaaniWeb.ProfileSetupLive do
          |> assign(:success, nil)}
       end
     end
+  end
+
+  @impl true
+  def handle_info(:request_geolocation, socket) do
+    {:noreply, push_event(socket, "request_geolocation", %{})}
   end
 
   @impl true
@@ -365,11 +374,52 @@ defmodule MtaaniWeb.ProfileSetupLive do
     user = socket.assigns.current_user
     bio = socket.assigns.bio
     traveler_type = socket.assigns.traveler_type
+    location_enabled = socket.assigns.location_enabled
 
-    case Accounts.update_profile(user, %{
-           bio: bio,
-           preferences: %{traveler_type: traveler_type}
-         }) do
+    # Convert traveler_type to the format expected by the database
+    traveler_type_value =
+      case traveler_type do
+        "traveler" -> "Traveler"
+        "guide" -> "Local guide"
+        "resident" -> "Local resident"
+        "business" -> "Business"
+        _ -> "Traveler"
+      end
+
+    # Prepare profile attributes
+    attrs = %{
+      bio: bio,
+      traveler_type: traveler_type_value
+    }
+
+    # Add location if enabled
+    attrs =
+      if location_enabled and socket.assigns.user_location do
+        Map.merge(attrs, %{
+          location_lat: socket.assigns.user_location.lat,
+          location_lng: socket.assigns.user_location.lng,
+          last_active: DateTime.utc_now()
+        })
+      else
+        attrs
+      end
+
+    # If user is a guide, mark them as guide and create guide profile
+    if traveler_type == "guide" do
+      attrs = Map.put(attrs, :is_guide, true)
+
+      # Create guide profile
+      Mtaani.Accounts.upsert_guide(user.id, %{
+        bio: bio,
+        availability_status: "online",
+        verification_status: "pending",
+        languages: [],
+        years_experience: 0
+      })
+    end
+
+    # Update user profile
+    case Mtaani.Accounts.update_complete_profile(user, attrs) do
       {:ok, _user} ->
         {:noreply,
          socket
@@ -404,6 +454,11 @@ defmodule MtaaniWeb.ProfileSetupLive do
   def handle_event("user_offline", %{"user_id" => user_id}, socket) do
     MtaaniWeb.OnlineTracker.remove_user(user_id)
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("location-update", %{"lat" => lat, "lng" => lng}, socket) do
+    {:noreply, assign(socket, :user_location, %{lat: lat, lng: lng})}
   end
 
   defp get_initials(name) do
