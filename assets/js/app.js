@@ -2,7 +2,7 @@ import { Socket } from "phoenix";
 import { LiveSocket } from "phoenix_live_view";
 import topbar from "../vendor/topbar";
 import { OnlineTracker } from "./hooks/online_tracker";
-import { MapLibreHook } from "./hooks/maplibre";
+import { MapLibreHook } from "./hooks/map_maplibre.js";
 import { ScrollToBottom } from "./hooks/scroll_to_bottom";
 import { ThemeToggle } from "./hooks/theme_toggle";
 import InfiniteScroll from "./hooks/infinite_scroll";
