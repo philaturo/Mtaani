@@ -3013,3 +3013,41 @@ body {
 .bottom-sheet {
   z-index: 15;
 }
+
+/* Scrollbar hide utility */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Toggle switch */
+.toggle {
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+.toggle::after {
+  transition: transform 0.2s ease;
+}
+.toggle.on {
+  background-color: #10b981;
+}
+.toggle.on::after {
+  transform: translateX(18px);
+}
+
+/* Modal animations */
+@keyframes modalSlideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+#edit-modal > div:last-child {
+  animation: modalSlideUp 0.3s ease-out;
+}
