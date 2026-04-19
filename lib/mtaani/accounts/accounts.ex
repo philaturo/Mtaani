@@ -346,7 +346,12 @@ defmodule Mtaani.Accounts do
   @doc "Calculate trust score based on earned signals."
   def calculate_trust_score(user) do
     signals = [
-      %{key: :phone_verified, points: 20, completed: user.phone_verified == true},
+      %{
+        key: :phone_verified,
+        points: 20,
+        completed: user.phone_verified == true,
+        description: "Phone number verified"
+      },
       %{
         key: :profile_complete,
         points: 15,
