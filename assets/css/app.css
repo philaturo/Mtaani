@@ -117,25 +117,6 @@ body {
   border-color: var(--color-verdant-forest);
 }
 
-/* Custom scrollbar */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: var(--color-onyx-mauve);
-  border-radius: 10px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--color-verdant-forest);
-  border-radius: 10px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: var(--color-verdant-deep);
-}
-
 /* Typing animation */
 .typing-indicator span {
   animation: blink 1.4s infinite both;
@@ -3075,10 +3056,9 @@ body {
   height: 180px;
   background: linear-gradient(
     135deg,
-    #064e3b 0%,
-    #065f46 40%,
-    #047857 70%,
-    #059669 100%
+    var(--color-verdant-deep) 0%,
+    var(--color-verdant-forest) 50%,
+    var(--color-verdant-sage) 100%
   );
   position: relative;
   overflow: hidden;
@@ -3168,19 +3148,20 @@ body {
 
 /* Avatar row */
 .avatar-row {
-  padding: 0 16px;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   margin-top: -38px;
   position: relative;
-  z-index: 2;
-  flex-shrink: 0;
+  z-index: 10;
+  width: 100%;
 }
+
 .av-wrap {
   position: relative;
-  cursor: pointer;
+  flex-shrink: 0;
 }
+
 .av-circle {
   width: 84px;
   height: 84px;
@@ -3191,9 +3172,12 @@ body {
   font-size: 26px;
   font-weight: 500;
   color: #fff;
-  border: 3.5px solid var(--color-background-primary);
+  border: 3.5px solid var(--color-background-primary, #ffffff);
   flex-shrink: 0;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
+
 .av-edit {
   position: absolute;
   bottom: 3px;
@@ -3220,8 +3204,10 @@ body {
 .av-action-row {
   display: flex;
   gap: 7px;
-  padding-bottom: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
 }
+
 .av-btn {
   padding: 8px 16px;
   border-radius: 10px;
@@ -4483,4 +4469,260 @@ select:focus {
   left: 0;
   right: 0;
   bottom: 0;
+}
+
+/* Hide scrollbars globally */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* ==================== FIXED MAP LAYOUT - NO SLUGGISHNESS ==================== */
+
+/* ==================== FIXED MAP LAYOUT - NO SLUGGISHNESS ==================== */
+
+/* Fix viewport height for mobile - use dvh instead of vh */
+.frame {
+  width: 100%;
+  height: 100dvh !important; /* Use dynamic viewport height */
+  background: var(--color-background-tertiary, #f5f5f5);
+  border: none;
+  border-radius: 0;
+  overflow: hidden;
+  position: fixed; /* Fixed positioning prevents layout shifts */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  overscroll-behavior: none; /* Prevents pull-to-refresh on the map */
+}
+
+/* Map canvas - proper flex behavior */
+.map-canvas {
+  position: relative;
+  flex: 1;
+  min-height: 0; /* Critical for flex containment */
+  background: #e8f0e0;
+  overflow: hidden;
+  touch-action: pan-x pan-y; /* Better touch handling */
+}
+
+/* Map container - absolute positioning within canvas */
+#map {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  touch-action: none; /* Let MapLibre handle all map gestures */
+}
+
+/* Fix top bar - ensure it's above map but doesn't interfere */
+.topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 10px 12px;
+  z-index: 20;
+  pointer-events: none; /* Allow clicks to pass through to map */
+}
+
+.topbar > * {
+  pointer-events: auto; /* But make interactive elements clickable */
+}
+
+/* Map controls - positioned absolutely */
+.map-ctrl,
+.layers-fab,
+.compass,
+.pulse-legend {
+  z-index: 20;
+  pointer-events: auto;
+}
+
+/* Bottom sheet - FULLY EXPANDED to show all content */
+.bottom-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-radius: 18px 18px 0 0;
+  border-top: 0.5px solid rgba(0, 0, 0, 0.1);
+  z-index: 30;
+  transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+  max-height: 92vh; /* Increased to show more content */
+  overflow-y: auto;
+  touch-action: pan-y; /* Only vertical scroll on bottom sheet */
+  overscroll-behavior: contain; /* Prevent scroll chaining to body */
+  will-change: transform; /* Performance optimization */
+  display: flex;
+  flex-direction: column;
+}
+
+/* When bottom sheet is open - fully expanded */
+.bottom-sheet.open {
+  transform: translateY(0) !important;
+  max-height: 92vh;
+}
+
+/* When bottom sheet is in peek state - shows handle and preview */
+.bottom-sheet.peek {
+  transform: translateY(
+    calc(100% - 100px)
+  ); /* Shows peek area with more content visible */
+}
+
+/* Scrollable content wrapper - ensures all content is accessible */
+.bottom-sheet .scrollable-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 20px; /* Extra padding at bottom for comfortable scrolling */
+}
+
+/* Ensure all content sections are visible */
+.bottom-sheet .vibe-peek,
+.bottom-sheet .quick-actions-row,
+.bottom-sheet .section-row,
+.bottom-sheet .sight-scroll,
+.bottom-sheet .guide-scroll {
+  flex-shrink: 0;
+}
+
+/* Better drag handle */
+.bs-handle {
+  width: 40px;
+  height: 5px;
+  background: #d1d5db;
+  border-radius: 3px;
+  margin: 12px auto 10px;
+  cursor: grab;
+  transition: all 0.2s;
+  touch-action: none; /* Let JS handle drag */
+  flex-shrink: 0;
+}
+
+.bs-handle:active {
+  cursor: grabbing;
+}
+
+.bs-handle:hover {
+  background: #9ca3af;
+  transform: scale(1.05);
+}
+
+/* Content sections spacing */
+.vibe-peek {
+  padding: 0 16px 16px;
+  flex-shrink: 0;
+}
+
+.quick-actions-row {
+  padding: 0 16px 20px;
+  flex-shrink: 0;
+}
+
+.section-row {
+  padding: 8px 16px 12px;
+  flex-shrink: 0;
+}
+
+.sight-scroll,
+.guide-scroll {
+  padding: 0 16px 20px;
+  flex-shrink: 0;
+}
+
+/* Make scroll areas within bottom sheet work properly */
+.sight-scroll,
+.guide-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sight-card,
+.guide-card {
+  display: inline-flex;
+  vertical-align: top;
+}
+
+/* Prevent body scroll when bottom sheet is open */
+body.bottom-sheet-open {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Dark mode adjustments */
+.dark .bottom-sheet {
+  background: #1a1a1a;
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .bs-handle {
+  background: #374151;
+}
+
+.dark .bs-handle:hover {
+  background: #4b5563;
+}
+
+/* Ensure bottom navigation doesn't cause issues */
+.absolute.bottom-0 {
+  pointer-events: auto;
+  z-index: 25;
+}
+
+/* Fix for bottom sheet content scrolling - custom scrollbar */
+.bottom-sheet::-webkit-scrollbar {
+  width: 4px;
+}
+
+.bottom-sheet::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.bottom-sheet::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.dark .bottom-sheet::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Performance improvements */
+.map-canvas,
+#map,
+.bottom-sheet {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Ensure all content is visible when expanded */
+.bottom-sheet.open .scrollable-content {
+  max-height: none;
+}
+
+/* Fix for notch/hole-punch displays */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .bottom-sheet {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .bottom-sheet .scrollable-content {
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
 }
