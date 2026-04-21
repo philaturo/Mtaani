@@ -332,10 +332,6 @@ defmodule MtaaniWeb.ProfileLive do
             
             <div class="cover-pattern"></div>
             
-            <div class="absolute inset-0 flex items-center justify-center text-6xl opacity-12">
-              🦁🌄🌿🏔
-            </div>
-            
             <div class="cover-top-actions">
               <button phx-click="navigate" phx-value-to="/home" class="cta-back">←</button>
               <div class="cta-right">
