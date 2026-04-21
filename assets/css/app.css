@@ -4220,29 +4220,6 @@ body {
   background: var(--g);
   color: #fff;
 }
-
-/* Edit modal sheet */
-.modal-bg {
-  display: none;
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 50;
-  align-items: flex-end;
-}
-.modal-bg.open {
-  display: flex;
-}
-.edit-sheet {
-  background: var(--color-background-primary);
-  border-radius: 22px 22px 0 0;
-  width: 100%;
-  max-height: 88%;
-  overflow-y: auto;
-  scrollbar-width: none;
-  display: flex;
-  flex-direction: column;
-}
 .es-handle {
   width: 34px;
   height: 4px;
@@ -4462,13 +4439,44 @@ select:focus {
   box-shadow: none;
 }
 
-/* Ensure modal appears above everything */
+/* Modal overlay - full screen */
 .modal-bg {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.modal-bg.open {
+  display: flex;
+}
+
+/* Modal sheet - full width, responsive */
+.edit-sheet {
+  background: var(--color-background-primary);
+  border-radius: 24px 24px 0 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease-out;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
 /* Hide scrollbars globally */
@@ -4480,8 +4488,6 @@ select:focus {
 *::-webkit-scrollbar {
   display: none;
 }
-
-/* ==================== FIXED MAP LAYOUT - NO SLUGGISHNESS ==================== */
 
 /* ==================== FIXED MAP LAYOUT - NO SLUGGISHNESS ==================== */
 
@@ -4725,4 +4731,66 @@ body.bottom-sheet-open {
   .bottom-sheet .scrollable-content {
     padding-bottom: calc(20px + env(safe-area-inset-bottom));
   }
+}
+
+/* Travel vibes chips - ensure proper styling */
+.es-vibe-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.vibe-opt {
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--color-border-secondary);
+  cursor: pointer;
+  background: var(--color-background-secondary);
+  color: var(--color-text-secondary);
+  transition: all 0.2s ease;
+}
+
+.vibe-opt:hover {
+  transform: scale(1.02);
+  border-color: var(--g);
+}
+
+.vibe-opt.s {
+  background: var(--g);
+  color: white;
+  border-color: var(--g);
+}
+
+/* Privacy toggle button styling */
+.toggle {
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  background: var(--color-border-secondary);
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.toggle.on {
+  background: var(--g);
+}
+
+.toggle div {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.toggle.on div {
+  transform: translateX(20px);
 }
