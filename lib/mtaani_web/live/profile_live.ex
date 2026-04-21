@@ -231,6 +231,47 @@ defmodule MtaaniWeb.ProfileLive do
     end
   end
 
+  @impl true
+  def handle_event("toggle_privacy", _, socket) do
+    new_status = !socket.assigns.profile_user.is_private
+    {:ok, user} = Accounts.update_profile(socket.assigns.profile_user, %{is_private: new_status})
+    {:noreply, assign(socket, :profile_user, user)}
+  end
+
+  @impl true
+  def handle_event("toggle_show_location", _, socket) do
+    # Store in preferences
+    current_prefs = socket.assigns.profile_user.preferences || %{}
+
+    new_prefs =
+      Map.put(current_prefs, "show_location", !Map.get(current_prefs, "show_location", true))
+
+    {:ok, user} = Accounts.update_profile(socket.assigns.profile_user, %{preferences: new_prefs})
+    {:noreply, assign(socket, :profile_user, user)}
+  end
+
+  @impl true
+  def handle_event("toggle_buddy_requests", _, socket) do
+    current_prefs = socket.assigns.profile_user.preferences || %{}
+
+    new_prefs =
+      Map.put(current_prefs, "buddy_requests", !Map.get(current_prefs, "buddy_requests", true))
+
+    {:ok, user} = Accounts.update_profile(socket.assigns.profile_user, %{preferences: new_prefs})
+    {:noreply, assign(socket, :profile_user, user)}
+  end
+
+  @impl true
+  def handle_event("toggle_activity_status", _, socket) do
+    current_prefs = socket.assigns.profile_user.preferences || %{}
+
+    new_prefs =
+      Map.put(current_prefs, "activity_status", !Map.get(current_prefs, "activity_status", true))
+
+    {:ok, user} = Accounts.update_profile(socket.assigns.profile_user, %{preferences: new_prefs})
+    {:noreply, assign(socket, :profile_user, user)}
+  end
+
   # ============================================================================
   # Navigation & Emergency
   # ============================================================================
@@ -930,9 +971,25 @@ defmodule MtaaniWeb.ProfileLive do
           <form phx-submit="update_profile" class="es-body">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
               <div class="es-field">
-                <div class="ef-label">Name</div>
+                <div class="ef-label">First name</div>
                 
-                <input type="text" name="profile[name]" value={@profile_user.name} class="ef-input" />
+                <input
+                  type="text"
+                  name="profile[first_name]"
+                  value={@profile_user.name}
+                  class="ef-input"
+                />
+              </div>
+              
+              <div class="es-field">
+                <div class="ef-label">Last name</div>
+                
+                <input
+                  type="text"
+                  name="profile[last_name]"
+                  value={@profile_user.name}
+                  class="ef-input"
+                />
               </div>
             </div>
             
@@ -979,7 +1036,7 @@ defmodule MtaaniWeb.ProfileLive do
             <div class="es-field">
               <div class="ef-label">Traveler type</div>
               
-              <select name="profile[traveler_type]" class="ef-input">
+              <select name="profile[traveler_type]" class="ef-input" id="traveler_type_select">
                 <option value="Traveler" selected={@profile_user.traveler_type == "Traveler"}>
                   🎒 Traveler
                 </option>
@@ -1001,19 +1058,40 @@ defmodule MtaaniWeb.ProfileLive do
               </select>
             </div>
             
+    <!-- Travel Vibes Chips -->
             <div class="es-field">
-              <div class="ef-label">Travel vibes (comma separated)</div>
+              <div class="ef-label">Travel vibes</div>
+              
+              <div class="es-vibe-row" id="travel_vibes_container" phx-hook="TravelVibes">
+                <div class="vibe-opt" data-vibe="Safari">🦁 Safari</div>
+                
+                <div class="vibe-opt" data-vibe="Hiking">🥾 Hiking</div>
+                
+                <div class="vibe-opt" data-vibe="Beach">🏖 Beach</div>
+                
+                <div class="vibe-opt" data-vibe="Photography">📸 Photography</div>
+                
+                <div class="vibe-opt" data-vibe="Food">🍽 Food</div>
+                
+                <div class="vibe-opt" data-vibe="Culture">🎭 Culture</div>
+                
+                <div class="vibe-opt" data-vibe="Nature">🌿 Nature</div>
+                
+                <div class="vibe-opt" data-vibe="Festivals">🎉 Festivals</div>
+              </div>
               
               <input
-                type="text"
+                type="hidden"
                 name="profile[travel_vibes]"
-                value={Enum.join(@profile_user.travel_vibes || [], ", ")}
-                class="ef-input"
+                id="travel_vibes_input"
+                value={Enum.join(@profile_user.travel_vibes || [], ",")}
               />
+              <div class="ef-char">Click on vibes that match your travel style</div>
             </div>
             
             <div class="es-section-label">PRIVACY SETTINGS</div>
             
+    <!-- Public Profile Toggle -->
             <div class="es-privacy-row">
               <div class="epr-info">
                 <div class="epr-label">Public profile</div>
@@ -1021,12 +1099,74 @@ defmodule MtaaniWeb.ProfileLive do
                 <div class="epr-sub">Anyone can view your trips and photos</div>
               </div>
               
-              <button type="button" class={["toggle", @profile_user.is_private && "on"]}>
+              <button
+                type="button"
+                class={["toggle", @profile_user.is_private && "on"]}
+                phx-click="toggle_privacy"
+                id="public_profile_toggle"
+              >
                 <div class={[
                   "w-4 h-4 rounded-full bg-white shadow-sm transition-transform mt-0.5",
                   @profile_user.is_private && "translate-x-5",
                   !@profile_user.is_private && "translate-x-0.5"
                 ]}>
+                </div>
+              </button>
+            </div>
+            
+    <!-- Show Location Toggle -->
+            <div class="es-privacy-row">
+              <div class="epr-info">
+                <div class="epr-label">Show location</div>
+                
+                <div class="epr-sub">Display your current area to buddies</div>
+              </div>
+              
+              <button
+                type="button"
+                class="toggle on"
+                phx-click="toggle_show_location"
+                id="show_location_toggle"
+              >
+                <div class="w-4 h-4 rounded-full bg-white shadow-sm transition-transform mt-0.5 translate-x-5">
+                </div>
+              </button>
+            </div>
+            
+    <!-- Travel Buddy Requests Toggle -->
+            <div class="es-privacy-row">
+              <div class="epr-info">
+                <div class="epr-label">Travel buddy requests</div>
+                
+                <div class="epr-sub">Allow others to send buddy requests</div>
+              </div>
+              
+              <button
+                type="button"
+                class="toggle on"
+                phx-click="toggle_buddy_requests"
+                id="buddy_requests_toggle"
+              >
+                <div class="w-4 h-4 rounded-full bg-white shadow-sm transition-transform mt-0.5 translate-x-5">
+                </div>
+              </button>
+            </div>
+            
+    <!-- Activity Status Toggle -->
+            <div class="es-privacy-row">
+              <div class="epr-info">
+                <div class="epr-label">Activity status</div>
+                
+                <div class="epr-sub">Show when you're online or last seen</div>
+              </div>
+              
+              <button
+                type="button"
+                class="toggle"
+                phx-click="toggle_activity_status"
+                id="activity_status_toggle"
+              >
+                <div class="w-4 h-4 rounded-full bg-white shadow-sm transition-transform mt-0.5 translate-x-0.5">
                 </div>
               </button>
             </div>
