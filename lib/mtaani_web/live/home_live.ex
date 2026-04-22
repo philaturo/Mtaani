@@ -482,7 +482,7 @@ defmodule MtaaniWeb.HomeLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="h-full flex flex-col bg-gradient-to-b from-onyx/5 to-white">
+    <div class="flex flex-col min-h-screen bg-gradient-to-b from-onyx/5 to-white">
       
     <!-- Create Post Button (MOVED TO TOP) -->
       <div class="bg-white rounded-xl shadow-sm p-3 mx-4 mt-1 mb-1 border border-onyx-mauve/10">
@@ -669,7 +669,7 @@ defmodule MtaaniWeb.HomeLive do
         <% end %>
         
     <!-- Feed Container -->
-        <div id="feed-container" phx-hook="FeedAnimations" class="space-y-4 px-4 pb-20">
+        <div id="feed-container" phx-hook="FeedAnimations" class="space-y-4 px-4 pb-4">
           
     <!-- Loading Skeletons -->
           <%= if @loading_posts do %>
