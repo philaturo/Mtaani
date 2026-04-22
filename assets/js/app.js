@@ -25,6 +25,7 @@ import PinchZoom from "./hooks/pinch_zoom";
 import VoiceRecorder from "./hooks/voice_recorder";
 import OtpInput from "./hooks/otp_input";
 import AvatarUpload from "./hooks/avatar_upload";
+import TravelVibes from "./hooks/travel_vibes";
 
 // Get CSRF token from meta tag
 let csrfToken = document
@@ -45,6 +46,7 @@ let liveSocket = new LiveSocket("/live", Socket, {
     MessageObserver: MessageObserver,
     OtpInput: OtpInput,
     AvatarUpload: AvatarUpload,
+    TravelVibes: TravelVibes,
 
     // New hooks for feed and chat
     InfiniteScroll: InfiniteScroll,
