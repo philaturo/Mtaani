@@ -130,4 +130,12 @@ defmodule MtaaniWeb.SplashLive do
   def handle_event("close_emergency", _, socket) do
     {:noreply, assign(socket, :show_emergency, false)}
   end
+
+  # Catch-all handler to ignore any events not meant for SplashLive
+  # This prevents crashes when events from other LiveViews (like RegisterLive)
+  # are accidentally sent to this process
+  @impl true
+  def handle_event(_event, _params, socket) do
+    {:noreply, socket}
+  end
 end
