@@ -13,12 +13,13 @@ defmodule MtaaniWeb.RegistrationController do
       }) do
     name = first_name <> " " <> last_name
 
+    # Use string keys to match what Accounts.create_user/1 expects
     case Accounts.create_user(%{
-           name: name,
-           username: username,
-           phone: phone,
-           password: password,
-           phone_verified: false
+           "name" => name,
+           "username" => username,
+           "phone" => phone,
+           "password" => password,
+           "phone_verified" => false
          }) do
       {:ok, user} ->
         # Use the verification code that was already generated during user creation
