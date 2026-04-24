@@ -179,18 +179,44 @@ defmodule Mtaani.Accounts do
 
   @doc "Create a new user with phone verification."
   def create_user(attrs) do
-    attrs = for {key, val} <- attrs, into: %{}, do: {to_string(key), val}
-    raw_phone = attrs["phone"]
+    # Convert string keys to atoms for the changeset
+    attrs = for {key, val} <- attrs, into: %{}, do: {String.to_atom(key), val}
+
+    raw_phone = Map.get(attrs, :phone)
     phone = format_phone(raw_phone)
 
     if is_nil(phone) do
       {:error, "Phone number is required. Please use format: 07XXXXXXXX"}
     else
-      attrs = Map.put(attrs, "phone", phone)
+      username = Map.get(attrs, :username)
 
-      %User{}
-      |> User.registration_changeset(attrs)
-      |> Repo.insert()
+      # Check if phone already exists
+      case get_user_by_phone(phone) do
+        nil ->
+          # Check if username already exists
+          case get_user_by_username(username) do
+            nil ->
+              # Prepare attrs with formatted phone
+              attrs =
+                attrs
+                |> Map.put(:phone, phone)
+                |> Map.put(:phone_verified, false)
+
+              # Create user - registration_changeset will handle:
+              # - Password hashing
+              # - Verification code generation
+              # - Validations
+              %User{}
+              |> User.registration_changeset(attrs)
+              |> Repo.insert()
+
+            _existing_user ->
+              {:error, "Username already taken"}
+          end
+
+        _existing_user ->
+          {:error, "Phone number already registered"}
+      end
     end
   end
 
