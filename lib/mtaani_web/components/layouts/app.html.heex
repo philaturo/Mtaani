@@ -85,7 +85,7 @@
     </main>
 
     <!-- Emergency Modal -->
-    <%= if @show_emergency do %>
+    <%= if assigns[:show_emergency] do %>
       <.live_component
         module={MtaaniWeb.EmergencyModalLive}
         id="emergency-modal"
