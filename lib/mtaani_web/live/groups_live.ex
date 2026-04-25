@@ -26,6 +26,7 @@ defmodule MtaaniWeb.GroupsLive do
         socket =
           socket
           |> assign(:current_user, current_user)
+          |> assign(:loading, true)
           # For bottom nav highlight
           |> assign(:active_tab, "groups")
           |> assign(:page_title, "Groups")
@@ -56,6 +57,9 @@ defmodule MtaaniWeb.GroupsLive do
           |> assign(:input_text, "")
           |> assign(:statuses, [])
 
+        # Load data asynchronously (non-blocking)
+        send(self(), :load_groups_data)
+
         # Subscribe to real-time updates
         if connected?(socket) do
           Phoenix.PubSub.subscribe(Mtaani.PubSub, "groups_updates")
@@ -81,6 +85,28 @@ defmodule MtaaniWeb.GroupsLive do
   end
 
   # ==================== REAL-TIME HANDLERS ====================
+
+  @impl true
+  def handle_info(:load_groups_data, socket) do
+    current_user = socket.assigns.current_user
+
+    # Load all data in background
+    pulse_data = Groups.get_pulse_data(current_user.id)
+    user_groups = Groups.list_user_groups(current_user.id)
+    suggested_groups = Groups.list_groups(%{joined_by_user_id: nil, for_user_id: current_user.id})
+
+    # Update socket with loaded data and turn off loading
+    socket =
+      socket
+      |> assign(:pulse_data, pulse_data)
+      |> assign(:user_groups, user_groups)
+      |> assign(:suggested_groups, suggested_groups)
+      |> assign(:display_groups, user_groups)
+      # Skeletons disappear
+      |> assign(:loading, false)
+
+    {:noreply, socket}
+  end
 
   @impl true
   def handle_info({:new_message, message}, socket) do
