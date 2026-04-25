@@ -32,6 +32,8 @@
   --bg-secondary: #ffffff;
   --text-primary: #1a1a1a;
   --text-secondary: #785964;
+  --color-border-tertiary: #e5e7eb;
+  --color-border-secondary: #d1d5db;
 }
 
 /* Dark mode */
@@ -44,6 +46,8 @@
   --bg-secondary: #1e1e1e;
   --text-primary: #e0e0e0;
   --text-secondary: #bcabb0;
+  --color-border-tertiary: #374151;
+  --color-border-secondary: #4b5563;
 }
 
 body {
@@ -4793,4 +4797,411 @@ body.bottom-sheet-open {
 
 .toggle.on div {
   transform: translateX(20px);
+}
+
+/* ==================== GROUPS COMPONENT STYLES ==================== */
+
+/* Group Cards */
+.group-card {
+  @apply rounded-xl overflow-hidden border transition-all duration-200;
+  background-color: var(--bg-secondary);
+  border-color: var(--color-border-tertiary);
+}
+
+.group-card:hover {
+  @apply shadow-md;
+  transform: translateY(-2px);
+  border-color: var(--color-verdant-sage);
+}
+
+/* Group Cover Images */
+.group-cover {
+  background: linear-gradient(
+    135deg,
+    var(--color-verdant-forest) 0%,
+    var(--color-verdant-deep) 100%
+  );
+  position: relative;
+  overflow: hidden;
+}
+
+.group-cover-overlay {
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.1) 50%,
+    transparent 100%
+  );
+}
+
+/* Pulse Hero Section */
+.pulse-hero {
+  background: linear-gradient(
+    135deg,
+    var(--color-verdant-forest) 0%,
+    var(--color-verdant-deep) 100%
+  );
+  position: relative;
+  overflow: hidden;
+}
+
+.pulse-hero-radial {
+  background:
+    radial-gradient(
+      circle at 20% 50%,
+      rgba(90, 168, 122, 0.25) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      circle at 80% 20%,
+      rgba(59, 130, 246, 0.15) 0%,
+      transparent 50%
+    );
+}
+
+.pulse-online-badge {
+  @apply flex items-center gap-1.5 rounded-full px-2.5 py-1;
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(4px);
+}
+
+.pulse-online-dot {
+  @apply w-1.5 h-1.5 rounded-full animate-pulse;
+  background-color: #10b981;
+}
+
+/* Channel Tabs */
+.channel-tab {
+  @apply px-4 py-3 text-sm font-medium whitespace-nowrap flex items-center gap-2 border-b-2 transition-all duration-200;
+  color: var(--text-secondary);
+  border-bottom-color: transparent;
+}
+
+.channel-tab:hover {
+  color: #10b981;
+}
+
+.channel-tab-active {
+  color: #10b981;
+  border-bottom-color: #10b981;
+}
+
+/* Message Bubbles */
+.message-bubble-user {
+  background-color: #10b981;
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.message-bubble-other {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--color-border-tertiary);
+  color: var(--text-primary);
+  border-bottom-left-radius: 4px;
+}
+
+.message-sender-name {
+  @apply text-xs font-medium;
+  color: var(--text-secondary);
+}
+
+.message-timestamp {
+  @apply text-[10px];
+  color: var(--text-secondary);
+}
+
+/* Typing Indicator */
+.typing-dot {
+  @apply w-1.5 h-1.5 rounded-full;
+  background-color: var(--text-secondary);
+  animation: bounce 1.4s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+.typing-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-4px);
+  }
+}
+
+/* Pinned Message Bar */
+.pinned-message-bar {
+  background-color: #fffbeb;
+  border-bottom: 1px solid #fde68a;
+}
+
+.dark .pinned-message-bar {
+  background-color: rgba(251, 191, 36, 0.1);
+  border-bottom-color: rgba(251, 191, 36, 0.2);
+}
+
+.pinned-message-text {
+  @apply text-xs flex-1 truncate;
+  color: #92400e;
+}
+
+.dark .pinned-message-text {
+  color: #fbbf24;
+}
+
+/* Safety Message */
+.safety-message {
+  background-color: rgba(182, 126, 125, 0.1);
+  border: 1px solid rgba(182, 126, 125, 0.2);
+  color: #b67e7d;
+  border-radius: 1rem;
+}
+
+.dark .safety-message {
+  background-color: rgba(182, 126, 125, 0.15);
+}
+
+/* Event Card */
+.event-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--color-border-tertiary);
+  @apply rounded-xl overflow-hidden transition-all duration-200;
+}
+
+.event-card:hover {
+  @apply shadow-md;
+  border-color: var(--color-verdant-sage);
+}
+
+.event-date-badge {
+  background-color: rgba(90, 168, 122, 0.1);
+  @apply rounded-lg py-2 text-center;
+}
+
+.event-day {
+  @apply text-xl font-bold;
+  color: var(--color-verdant-forest);
+}
+
+.event-month {
+  @apply text-[10px] font-medium;
+  color: var(--color-verdant-forest);
+}
+
+/* Convoy Panel */
+.convoy-hero {
+  background-color: #fff7ed;
+  border: 1px solid #fed7aa;
+}
+
+.dark .convoy-hero {
+  background-color: rgba(251, 146, 60, 0.1);
+  border-color: rgba(251, 146, 60, 0.2);
+}
+
+.convoy-stat-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--color-border-tertiary);
+  @apply rounded-lg p-2 text-center;
+}
+
+.convoy-stat-value {
+  @apply text-lg font-bold;
+  color: #d97706;
+}
+
+.dark .convoy-stat-value {
+  color: #fbbf24;
+}
+
+.convoy-stat-label {
+  @apply text-[10px];
+  color: var(--text-secondary);
+}
+
+/* SOS Button */
+.sos-button {
+  background-color: #e11d48;
+  @apply text-white font-medium rounded-lg transition-all duration-200;
+}
+
+.sos-button:hover {
+  background-color: #be123c;
+  transform: scale(1.02);
+}
+
+/* Presence Strip */
+.presence-avatar {
+  @apply relative w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-medium;
+  background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+}
+
+.presence-online-dot {
+  @apply absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2;
+  border-color: var(--bg-secondary);
+}
+
+.presence-name {
+  @apply text-[10px] transition-colors duration-200;
+  color: var(--text-secondary);
+}
+
+.presence-name:hover {
+  color: var(--text-primary);
+}
+
+/* Filter Chips */
+.filter-chip {
+  @apply px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-200;
+}
+
+.filter-chip-active {
+  background-color: #10b981;
+  color: white;
+}
+
+.filter-chip-inactive {
+  background-color: var(--color-background-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--color-border-secondary);
+}
+
+.filter-chip-inactive:hover {
+  background-color: rgba(16, 185, 129, 0.1);
+  border-color: #10b981;
+  color: #10b981;
+}
+
+/* Group Type Badges */
+.badge-trip {
+  background-color: #ecfdf5;
+  color: #065f46;
+}
+
+.dark .badge-trip {
+  background-color: rgba(6, 95, 70, 0.2);
+  color: #6ee7b7;
+}
+
+.badge-guide {
+  background-color: #eff6ff;
+  color: #1e40af;
+}
+
+.dark .badge-guide {
+  background-color: rgba(30, 64, 175, 0.2);
+  color: #93c5fd;
+}
+
+.badge-community {
+  background-color: #fdf4ff;
+  color: #6b21a8;
+}
+
+.dark .badge-community {
+  background-color: rgba(107, 33, 168, 0.2);
+  color: #d8b4fe;
+}
+
+/* Bottom Sheet Modal */
+.bottom-sheet {
+  @apply fixed inset-x-0 bottom-0 z-50 transform transition-transform duration-300 ease-out;
+}
+
+.bottom-sheet-content {
+  background-color: var(--bg-secondary);
+  @apply rounded-t-2xl shadow-xl max-h-[85vh] overflow-y-auto;
+}
+
+.bottom-sheet-handle {
+  @apply w-12 h-1 rounded-full mx-auto mt-3 mb-2;
+  background-color: var(--color-border-secondary);
+}
+
+/* Scrollbar Hide */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Activity Level Indicators */
+.activity-high {
+  background-color: #10b981;
+}
+
+.activity-medium {
+  background-color: #f59e0b;
+}
+
+.activity-low {
+  background-color: #94a3b8;
+}
+
+.activity-text-high {
+  color: #10b981;
+}
+
+.activity-text-medium {
+  color: #f59e0b;
+}
+
+.activity-text-low {
+  color: #94a3b8;
+}
+
+/* Trust Score Badge */
+.trust-badge {
+  @apply text-xs font-medium px-2 py-0.5 rounded-md border;
+  background-color: rgba(90, 168, 122, 0.2);
+  color: #5da87a;
+  border-color: rgba(90, 168, 122, 0.3);
+}
+
+/* Photo Grid */
+.photo-grid {
+  @apply grid grid-cols-3 gap-2;
+}
+
+.photo-grid-item {
+  @apply aspect-square rounded-xl overflow-hidden cursor-pointer transition-all duration-200;
+  background-color: var(--color-background-secondary);
+}
+
+.photo-grid-item:hover {
+  transform: scale(1.02);
+  @apply shadow-md;
+}
+
+/* Member Row */
+.member-row {
+  @apply flex items-center gap-3 p-3 rounded-lg transition-all duration-200;
+}
+
+.member-row:hover {
+  background-color: var(--color-background-secondary);
+}
+
+.member-role-admin {
+  background-color: #fdf4ff;
+  color: #6b21a8;
+}
+
+.member-role-guide {
+  background-color: #f0fdf4;
+  color: #15803d;
+}
+
+.member-role-traveler {
+  background-color: #eff6ff;
+  color: #1e40af;
 }
