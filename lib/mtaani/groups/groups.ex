@@ -30,7 +30,7 @@ defmodule Mtaani.Groups do
         where: gm.user_id == ^user_id,
         where: g.is_active == true,
         order_by: [desc: g.member_count],
-        preload: [:created_by]
+        preload: [:creator]
       )
 
     groups = Repo.all(query)
@@ -82,7 +82,7 @@ defmodule Mtaani.Groups do
     query =
       from(g in query,
         order_by: [desc: g.member_count],
-        preload: [:created_by]
+        preload: [:creator]
       )
 
     groups = Repo.all(query)
@@ -97,7 +97,7 @@ defmodule Mtaani.Groups do
   def get_group(id, user_id \\ nil) do
     group =
       Repo.get(Group, id)
-      |> Repo.preload([:created_by, channels: [], events: [], convoys: []])
+      |> Repo.preload([:creator, channels: [], events: [], convoys: []])
 
     if group do
       members = get_group_members(id)
@@ -344,7 +344,7 @@ defmodule Mtaani.Groups do
     query =
       from(e in query,
         order_by: [asc: e.event_date],
-        preload: [:created_by]
+        preload: [:creator]
       )
 
     Repo.all(query)
@@ -470,7 +470,8 @@ defmodule Mtaani.Groups do
         from(m in GroupMessage,
           where: m.group_id == ^group_id and m.inserted_at > ^one_hour_ago,
           select: count(m.id)
-        )
+        ),
+        :scalar
       ) || 0
 
     online_count =
@@ -478,7 +479,8 @@ defmodule Mtaani.Groups do
         from(gm in GroupMember,
           where: gm.group_id == ^group_id and gm.is_online == true,
           select: count(gm.id)
-        )
+        ),
+        :scalar
       ) || 0
 
     event_activity =
@@ -488,7 +490,8 @@ defmodule Mtaani.Groups do
           where:
             e.group_id == ^group_id and ea.inserted_at > ^today_start and ea.status == "going",
           select: count(ea.id)
-        )
+        ),
+        :scalar
       ) || 0
 
     has_convoy =
@@ -521,7 +524,8 @@ defmodule Mtaani.Groups do
           from(gm in GroupMember,
             where: gm.group_id in ^group_ids and gm.is_online == true,
             select: count(gm.id)
-          )
+          ),
+          :scalar
         ) || 0
       else
         0
@@ -534,7 +538,8 @@ defmodule Mtaani.Groups do
             from(m in GroupMessage,
               where: m.group_id in ^group_ids and m.inserted_at > ^today_start,
               select: count(m.id)
-            )
+            ),
+            :scalar
           ) || 0
 
         event_count =
@@ -542,7 +547,8 @@ defmodule Mtaani.Groups do
             from(e in GroupEvent,
               where: e.group_id in ^group_ids and e.inserted_at > ^today_start,
               select: count(e.id)
-            )
+            ),
+            :scalar
           ) || 0
 
         message_count + event_count
@@ -601,41 +607,45 @@ defmodule Mtaani.Groups do
   end
 
   def find_nearby_groups(user_id, radius_km \\ 10) do
-    user = Accounts.get_user!(user_id)
+    case Accounts.get_user(user_id) do
+      nil ->
+        []
 
-    if user.location_lat && user.location_lng do
-      radius_meters = radius_km * 1000
+      user ->
+        if user.location_lat && user.location_lng do
+          radius_meters = radius_km * 1000
 
-      query =
-        from(g in Group,
-          where: g.is_active == true,
-          where: not is_nil(g.location_lat) and not is_nil(g.location_lng),
-          where:
-            fragment(
-              "ST_DWithin(ST_MakePoint(?, ?)::geography, ST_MakePoint(?, ?)::geography, ?)",
-              ^user.location_lng,
-              ^user.location_lat,
-              g.location_lng,
-              g.location_lat,
-              ^radius_meters
-            ),
-          order_by: [
-            asc:
-              fragment(
-                "ST_Distance(ST_MakePoint(?, ?)::geography, ST_MakePoint(?, ?)::geography)",
-                ^user.location_lng,
-                ^user.location_lat,
-                g.location_lng,
-                g.location_lat
-              )
-          ],
-          limit: 20
-        )
+          query =
+            from(g in Group,
+              where: g.is_active == true,
+              where: not is_nil(g.location_lat) and not is_nil(g.location_lng),
+              where:
+                fragment(
+                  "ST_DWithin(ST_MakePoint(?, ?)::geography, ST_MakePoint(?, ?)::geography, ?)",
+                  ^user.location_lng,
+                  ^user.location_lat,
+                  g.location_lng,
+                  g.location_lat,
+                  ^radius_meters
+                ),
+              order_by: [
+                asc:
+                  fragment(
+                    "ST_Distance(ST_MakePoint(?, ?)::geography, ST_MakePoint(?, ?)::geography)",
+                    ^user.location_lng,
+                    ^user.location_lat,
+                    g.location_lng,
+                    g.location_lat
+                  )
+              ],
+              limit: 20
+            )
 
-      groups = Repo.all(query)
-      Enum.map(groups, fn group -> enrich_group_for_display(group, user_id) end)
-    else
-      []
+          groups = Repo.all(query)
+          Enum.map(groups, fn group -> enrich_group_for_display(group, user_id) end)
+        else
+          []
+        end
     end
   end
 
@@ -744,7 +754,7 @@ defmodule Mtaani.Groups do
       nil ->
         {:error, :group_not_found}
 
-      group ->
+      _group ->
         members = get_group_members(group_id)
         safety_channel = get_channel_by_name(group_id, "safety")
 
@@ -766,7 +776,7 @@ defmodule Mtaani.Groups do
     end
   end
 
-  def enrich_group_for_display(group, user_id) do
+  def enrich_group_for_display(group, _user_id) do
     {activity_level, activity_label} = get_group_activity_level(group.id)
 
     last_message =
@@ -801,7 +811,7 @@ defmodule Mtaani.Groups do
       member_count: group.member_count,
       trust_score: group.trust_score,
       cover_photo_url: group.cover_photo_url,
-      created_by: group.created_by,
+      created_by: group.creator,
       activity_level: activity_level,
       activity_label: activity_label,
       last_message_preview:
