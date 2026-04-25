@@ -608,4 +608,11 @@ defmodule MtaaniWeb.GroupsLive do
       _ -> ""
     end
   end
+
+  # ==================== NAVIGATE HANDLER ====================
+
+  @impl true
+  def handle_event("navigate", %{"page" => page}, socket) do
+    {:noreply, push_navigate(socket, to: "/#{page}")}
+  end
 end
