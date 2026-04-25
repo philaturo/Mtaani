@@ -1,0 +1,621 @@
+  <!-- Featured Groups -->
+  <%= if @suggested_groups != [] do %>
+    <div class="px-4 mb-4">
+      <div class="flex justify-between items-center mb-2">
+        <h3 class="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">FEATURED GROUPS</h3>
+        <button class="text-xs text-green-500">See all →</button>
+      </div>
+      <div class="flex gap-3 overflow-x-auto scrollbar-hide">
+        <%= for group <- Enum.take(@suggested_groups, 5) do %>
+          <div phx-click="open_group" phx-value-id={group.id} class="w-64 flex-shrink-0 rounded-xl border border-[var(--color-border-tertiary)] bg-[var(--color-background-primary)] cursor-pointer overflow-hidden">
+            <div class="h-24 bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 flex items-center justify-center text-4xl relative">
+              <%= if group.type == "trip", do: "🚗", else: "👥" %>
+              <div class="absolute top-2 right-2 text-[8px] font-medium px-1.5 py-0.5 rounded-full bg-white/80 dark:bg-black/50">
+                <%= if group.type == "trip", do: "Trip", else: String.capitalize(group.type) %>
+              </div>
+            </div>
+            <div class="p-3">
+              <h4 class="text-sm font-semibold text-[var(--color-text-primary)]"><%= group.name %></h4>
+              <div class="flex items-center gap-1 mt-1 text-xs text-[var(--color-text-secondary)]">
+                <span>👥 <%= group.member_count %> members</span>
+              </div>
+              <button class="mt-2 w-full py-1.5 bg-green-500 text-white text-xs font-medium rounded-lg hover:bg-green-600 transition-colors">
+                Join group
+              </button>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+<!-- GROUPS LIST SCREEN -->
+<div :if={@screen == :list}>
+  <!-- Top Bar -->
+  <div class="sticky top-0 z-10 bg-[var(--color-background-primary)]/80 backdrop-blur-sm border-b border-[var(--color-border-tertiary)]">
+    <div class="flex items-center justify-between px-4 py-3">
+      <h1 class="text-xl font-semibold text-[var(--color-text-primary)]">Groups</h1>
+      <div class="flex gap-2">
+        <button class="w-8 h-8 rounded-full bg-[var(--color-background-secondary)] flex items-center justify-center">
+          <Heroicons.magnifying_glass class="w-4 h-4 text-[var(--color-text-secondary)]" />
+        </button>
+        <button phx-click="open_create_modal" class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+          <Heroicons.plus class="w-4 h-4 text-white" />
+        </button>
+      </div>
+    </div>
+  </div>
+
+<!-- Search Bar -->
+  <div class="px-4 py-3 bg-[var(--color-background-primary)] border-b border-[var(--color-border-tertiary)]">
+    <div class="flex items-center gap-2 bg-[var(--color-background-secondary)] rounded-full px-4 py-2 border border-[var(--color-border-secondary)]">
+      <Heroicons.magnifying_glass class="w-4 h-4 text-[var(--color-text-secondary)]" />
+      <input 
+        type="text" 
+        placeholder="Search groups, topics, places..." 
+        class="flex-1 bg-transparent border-none outline-none text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)]"
+        phx-debounce="300"
+        phx-change="search_groups"
+        id="group_search"
+      />
+    </div>
+  </div>
+
+  <!-- Pulse Hero -->
+  <div class="mx-4 mt-4 rounded-xl overflow-hidden relative h-32">
+    <div class="absolute inset-0 bg-gradient-to-br from-green-900 to-green-700"></div>
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(16,185,129,.25)_0%,transparent_60%),radial-gradient(circle_at_80%_20%,rgba(59,130,246,.15)_0%,transparent_50%)]"></div>
+    <div class="relative p-4 flex flex-col justify-between h-full">
+      <div class="flex justify-between items-start">
+        <div class="flex items-center gap-1.5 bg-white/10 rounded-full px-2.5 py-1">
+          <div class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
+          <span class="text-[10px] text-white/85 font-medium"><%= @pulse_data.total_online %> online now</span>
+        </div>
+        <%= if @pulse_data.has_active_convoy do %>
+          <div class="text-xs text-white/70 bg-white/10 rounded-full px-2.5 py-1">🚗 Convoy active →</div>
+        <% end %>
+      </div>
+      <div>
+        <p class="text-[10px] text-white/50 font-medium uppercase tracking-wide">HAPPENING IN YOUR GROUPS</p>
+        <p class="text-sm text-white font-medium">
+          <%= if @pulse_data.latest_moment do %>
+            <%= @pulse_data.latest_moment.user.name %>: <%= String.slice(@pulse_data.latest_moment.content, 0..50) %>
+          <% else %>
+            <%= if @user_groups == [] do %>Join or create a group to see activity<% else %>No recent activity<% end %>
+          <% end %>
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="flex -space-x-1">
+          <%= for member <- Enum.take(@pulse_data.recent_active_members || [], 3) do %>
+            <div class="w-5 h-5 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-[8px] text-white font-medium border-2 border-green-900">
+              <%= String.slice(member.user.name, 0..1) %>
+            </div>
+          <% end %>
+          <%= if length(@pulse_data.recent_active_members || []) > 3 do %>
+            <div class="w-5 h-5 rounded-full bg-gray-500 flex items-center justify-center text-[8px] text-white font-medium border-2 border-green-900">
+              +<%= length(@pulse_data.recent_active_members) - 3 %>
+            </div>
+          <% end %>
+        </div>
+        <span class="text-[11px] text-white/60"><strong class="text-green-400"><%= @pulse_data.recent_activity_count %></strong> new posts across your groups today</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div class="flex gap-1.5 px-4 py-3 overflow-x-auto scrollbar-hide">
+    <%= for {filter, label} <- [{"all", "All"}, {"joined", "Joined"}, {"trips", "Trips"}, {"guides", "Guides"}, {"communities", "Communities"}, {"nearby", "Nearby"}] do %>
+      <button
+        phx-click="filter_groups"
+        phx-value-filter={filter}
+        class={filter_button_class(filter, @filter)}
+      >
+        <%= label %>
+      </button>
+    <% end %>
+  </div>
+
+  <!-- Groups List -->
+  <div class="px-4 pb-20 space-y-3">
+    <%= for group <- @display_groups do %>
+      <div phx-click="open_group" phx-value-id={group.id} class="rounded-xl overflow-hidden border border-[var(--color-border-tertiary)] bg-[var(--color-background-primary)] cursor-pointer">
+        <div class="h-28 relative overflow-hidden">
+          <div class="absolute inset-0 flex items-center justify-center text-5xl bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900 dark:to-green-800">
+            <%= if group.type == "trip", do: "🚗", else: "👥" %>
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent"></div>
+          <div class="absolute top-2 left-2 flex gap-1">
+            <span class="text-[9px] font-medium px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+              <%= if group.type == "trip", do: "Trip group", else: String.capitalize(group.type) %>
+            </span>
+          </div>
+          <div class="absolute top-2 right-2 flex gap-1">
+            <div class="flex -space-x-1">
+              <%= for member <- Enum.take(group.recent_members || [], 2) do %>
+                <div class="w-5 h-5 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-[7px] text-white font-medium border-2 border-black/30">
+                  <%= String.slice(member.user.name, 0..1) %>
+                </div>
+              <% end %>
+            </div>
+            <%= if group.unread_count > 0 do %>
+              <div class="min-w-[20px] h-5 rounded-full bg-green-500 flex items-center justify-center px-1.5 text-[10px] font-medium text-white">
+                <%= if group.unread_count > 9, do: "9+", else: group.unread_count %>
+              </div>
+            <% end %>
+          </div>
+          <div class="absolute bottom-2 left-3 text-white font-medium text-sm"><%= group.name %></div>
+        </div>
+        <div class="p-3">
+          <div class="flex items-center gap-1 text-xs text-[var(--color-text-secondary)]">
+            <span class="font-medium text-[var(--color-text-primary)]"><%= group.last_message_sender || "Group" %></span>
+            <span class="truncate"><%= group.last_message_preview || "No messages yet" %></span>
+          </div>
+          <div class="flex justify-between items-center mt-2">
+            <div class="flex gap-2">
+              <%= if group.location do %>
+                <span class="text-[10px] font-medium px-2 py-0.5 rounded-lg bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300">📍 <%= group.location %></span>
+              <% end %>
+              <%= if group.type == "guide_network" do %>
+                <span class="text-[10px] font-medium px-2 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">✅ Verified</span>
+              <% end %>
+            </div>
+            <%= if group.activity_level != :none do %>
+              <div class="flex items-center gap-1">
+                <div class={[
+                  "w-1.5 h-1.5 rounded-full",
+                  if(group.activity_level == :high, do: "bg-green-500", else: if(group.activity_level == :medium, do: "bg-amber-500", else: "bg-gray-400"))
+                ]}></div>
+                <span class={[
+                  "text-[10px] font-medium",
+                  if(group.activity_level == :high, do: "text-green-700 dark:text-green-400", else: if(group.activity_level == :medium, do: "text-amber-700 dark:text-amber-400", else: "text-gray-500"))
+                ]}><%= group.activity_label %></span>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <%= if @display_groups == [] do %>
+      <div class="text-center py-12">
+        <div class="text-5xl mb-3">👥</div>
+        <h3 class="text-base font-medium text-[var(--color-text-primary)]">No groups yet</h3>
+        <p class="text-xs text-[var(--color-text-secondary)] mt-1">Create a group or join existing ones</p>
+        <button phx-click="open_create_modal" class="mt-4 px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium">Create group</button>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- FAB -->
+  <button phx-click="open_create_modal" class="fixed bottom-20 right-4 w-12 h-12 rounded-full bg-green-500 shadow-lg flex items-center justify-center text-white text-xl z-10">
+    <Heroicons.plus class="w-6 h-6" />
+  </button>
+</div>
+
+<!-- GROUP DETAIL SCREEN -->
+<div :if={@screen == :detail}>
+  <!-- Group Cover -->
+  <div class="relative h-48 overflow-hidden">
+    <div class="absolute inset-0 flex items-center justify-center text-7xl bg-gradient-to-br from-green-700 to-green-800 dark:from-green-900 dark:to-green-950">
+      <%= if @selected_group.type == "trip", do: "🚗", else: "👥" %>
+    </div>
+    <div class="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent"></div>
+
+    <button phx-click="go_back" class="absolute top-4 left-4 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-all">
+      <Heroicons.arrow_left class="w-5 h-5" />
+    </button>
+
+    <div class="absolute top-4 right-4 flex gap-2">
+      <button class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-all">
+        <Heroicons.magnifying_glass class="w-5 h-5" />
+      </button>
+      <button class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-all">
+        <Heroicons.ellipsis_horizontal class="w-5 h-5" />
+      </button>
+    </div>
+
+    <div class="absolute bottom-0 left-0 right-0 p-4">
+      <h2 class="text-2xl font-semibold text-white"><%= @selected_group.name %></h2>
+      <div class="flex items-center gap-3 mt-1">
+        <div class="flex items-center gap-1">
+          <div class="w-1.5 h-1.5 rounded-full bg-green-400"></div>
+          <span class="text-xs text-white/80"><%= @selected_group.online_count %> online</span>
+        </div>
+        <span class="text-xs text-white/80"><%= @selected_group.member_count %> members</span>
+        <span class="text-xs font-medium px-2 py-0.5 rounded-md bg-green-500/20 text-green-400 border border-green-500/30">Trust <%= @selected_group.trust_score %>%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Presence Strip -->
+  <div class="flex items-center gap-2 px-4 py-3 bg-[var(--color-background-primary)] border-b border-[var(--color-border-tertiary)] overflow-x-auto scrollbar-hide">
+    <button class="w-10 h-10 rounded-full border border-dashed border-[var(--color-border-secondary)] flex items-center justify-center text-[var(--color-text-secondary)] hover:bg-[var(--color-background-secondary)] transition-all">
+      <Heroicons.plus class="w-4 h-4" />
+    </button>
+    <%= for member <- Enum.take(@selected_group.members || [], 12) do %>
+      <div class="flex flex-col items-center gap-0.5 flex-shrink-0 group cursor-pointer">
+        <div class="relative w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-xs font-medium border-2 border-[var(--color-background-primary)]">
+          <%= String.slice(member.user.name, 0..1) %>
+          <%= if member.is_online do %>
+            <div class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-[var(--color-background-primary)]"></div>
+          <% end %>
+        </div>
+        <span class="text-[10px] text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)] transition-colors"><%= String.slice(member.user.name, 0..8) %></span>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Channel Tabs -->
+  <div class="flex overflow-x-auto scrollbar-hide bg-[var(--color-background-primary)] border-b border-[var(--color-border-tertiary)]">
+    <%= for {channel, label, icon} <- [{"chat", "Chat", "💬"}, {"safety", "Safety", "🛡️"}, {"photos", "Photos", "📸"}, {"events", "Events", "🗓️"}, {"convoy", "Convoy", "🚗"}] do %>
+      <button
+        phx-click="switch_channel"
+        phx-value-channel={channel}
+        class={[
+          if(channel == @active_channel, do: "text-green-500 border-green-500", else: "text-[var(--color-text-secondary)] border-transparent"),
+          "px-4 py-3 text-sm font-medium whitespace-nowrap flex items-center gap-2 border-b-2 transition-all hover:text-green-500"
+        ]}
+      >
+        <span><%= icon %></span> <span><%= label %></span>
+      </button>
+    <% end %>
+  </div>
+
+  <!-- Chat Panel -->
+  <div :if={@active_channel == "chat"} class="flex flex-col h-[calc(100vh-320px)]">
+    <%= if @pinned_message do %>
+      <div class="bg-amber-50 dark:bg-amber-950/50 border-b border-amber-200 dark:border-amber-800 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors">
+        <Heroicons.bookmark class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+        <span class="text-xs text-amber-800 dark:text-amber-300 flex-1 truncate"><%= @pinned_message.user.name %>: <%= String.slice(@pinned_message.content, 0..60) %></span>
+        <span class="text-xs text-amber-600 dark:text-amber-400 font-medium">View</span>
+      </div>
+    <% end %>
+
+    <div class="flex-1 overflow-y-auto p-4 space-y-3" id="messages-container" phx-update="append">
+      <%= if @group_messages == [] do %>
+        <div class="text-center py-12">
+          <div class="text-5xl mb-3">💬</div>
+          <p class="text-sm text-[var(--color-text-secondary)]">No messages yet</p>
+          <p class="text-xs text-[var(--color-text-secondary)] mt-1">Be the first to send a message!</p>
+        </div>
+      <% end %>
+
+      <%= for message <- Enum.reverse(@group_messages) do %>
+        <div class={["flex gap-2", if(message.user_id == @current_user.id, do: "flex-row-reverse", else: "")]}>
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-[10px] text-white font-medium flex-shrink-0">
+            <%= String.slice(message.user.name, 0..2) %>
+          </div>
+          <div class={["max-w-[78%]", if(message.user_id == @current_user.id, do: "items-end", else: "")]}>
+            <div class={["flex gap-2 text-xs font-medium text-[var(--color-text-secondary)] mb-0.5 px-1", if(message.user_id == @current_user.id, do: "justify-end", else: "")]}>
+              <span><%= message.user.name %></span>
+              <%= if message.user.is_guide do %>
+                <span class="text-blue-500">· Guide</span>
+              <% end %>
+            </div>
+            <div class={[
+              "px-3 py-2 rounded-2xl text-sm leading-relaxed break-words",
+              if(message.user_id == @current_user.id, do: "bg-green-500 text-white rounded-br-md", else: "bg-[var(--color-background-primary)] border border-[var(--color-border-tertiary)] text-[var(--color-text-primary)] rounded-bl-md")
+            ]}>
+              <%= message.content %>
+            </div>
+            <div class={["flex gap-2 text-[10px] text-[var(--color-text-secondary)] mt-0.5 px-1", if(message.user_id == @current_user.id, do: "justify-end", else: "")]}>
+              <span><%= format_time(message.inserted_at) %></span>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <%= if @typing_users != [] do %>
+        <div class="flex items-center gap-1 pl-9">
+          <div class="w-1.5 h-1.5 rounded-full bg-[var(--color-text-secondary)] animate-bounce"></div>
+          <div class="w-1.5 h-1.5 rounded-full bg-[var(--color-text-secondary)] animate-bounce" style="animation-delay: 0.2s"></div>
+          <div class="w-1.5 h-1.5 rounded-full bg-[var(--color-text-secondary)] animate-bounce" style="animation-delay: 0.4s"></div>
+          <span class="text-xs text-[var(--color-text-secondary)] ml-1"><%= Enum.join(@typing_users, ", ") %> is typing...</span>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="p-3 bg-[var(--color-background-primary)] border-t border-[var(--color-border-tertiary)] flex items-center gap-2">
+      <button class="w-9 h-9 rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-background-secondary)] transition-colors">
+        <Heroicons.paper_clip class="w-4 h-4 mx-auto" />
+      </button>
+      <button class="w-9 h-9 rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-background-secondary)] transition-colors">
+        <Heroicons.camera class="w-4 h-4 mx-auto" />
+      </button>
+      <button class="w-9 h-9 rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-background-secondary)] transition-colors">
+        <Heroicons.map_pin class="w-4 h-4 mx-auto" />
+      </button>
+      <div class="flex-1 bg-[var(--color-background-secondary)] rounded-full px-3 py-2">
+        <input
+          type="text"
+          placeholder="Message #general…"
+          class="w-full bg-transparent border-none outline-none text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)]"
+          phx-keydown="send_message"
+          phx-key="Enter"
+          id="message_input"
+        />
+      </div>
+      <button phx-click="send_message" class="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center text-white hover:bg-green-600 transition-colors">
+        <Heroicons.arrow_up class="w-4 h-4" />
+      </button>
+    </div>
+  </div>
+
+  <!-- Safety Panel -->
+  <div :if={@active_channel == "safety"} class="flex flex-col h-[calc(100vh-320px)]">
+    <div class="flex-1 overflow-y-auto p-4 space-y-3">
+      <%= if @safety_messages == [] do %>
+        <div class="text-center py-12">
+          <div class="text-5xl mb-3">🛡️</div>
+          <p class="text-sm text-[var(--color-text-secondary)]">No safety messages yet</p>
+          <p class="text-xs text-[var(--color-text-secondary)] mt-1">Share road conditions, security updates, or safety tips</p>
+        </div>
+      <% end %>
+
+      <%= for message <- Enum.reverse(@safety_messages) do %>
+        <div class={["flex gap-2", if(message.user_id == @current_user.id, do: "flex-row-reverse", else: "")]}>
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-[10px] text-white font-medium flex-shrink-0">
+            <%= String.slice(message.user.name, 0..2) %>
+          </div>
+          <div class="max-w-[78%]">
+            <div class={["flex gap-2 text-xs font-medium text-[var(--color-text-secondary)] mb-0.5 px-1", if(message.user_id == @current_user.id, do: "justify-end", else: "")]}>
+              <span><%= message.user.name %></span>
+              <%= if message.user.is_guide do %>
+                <span class="text-blue-500">· Guide</span>
+              <% end %>
+            </div>
+            <div class="px-3 py-2 rounded-2xl text-sm leading-relaxed break-words bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300">
+              ⚠️ <%= message.content %>
+            </div>
+            <div class={["flex gap-2 text-[10px] text-[var(--color-text-secondary)] mt-0.5 px-1", if(message.user_id == @current_user.id, do: "justify-end", else: "")]}>
+              <span><%= format_time(message.inserted_at) %></span>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="p-3 bg-[var(--color-background-primary)] border-t border-[var(--color-border-tertiary)] flex items-center gap-2">
+      <button class="w-9 h-9 rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-background-secondary)] transition-colors">
+        <Heroicons.map_pin class="w-4 h-4 mx-auto" />
+      </button>
+      <div class="flex-1 bg-[var(--color-background-secondary)] rounded-full px-3 py-2">
+        <input type="text" placeholder="Report safety info…" class="w-full bg-transparent border-none outline-none text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)]" />
+      </div>
+      <button class="w-9 h-9 rounded-full bg-amber-500 flex items-center justify-center text-white hover:bg-amber-600 transition-colors">
+        <Heroicons.arrow_up class="w-4 h-4" />
+      </button>
+    </div>
+  </div>
+
+  <!-- Photos Panel -->
+  <div :if={@active_channel == "photos"} class="h-[calc(100vh-320px)] overflow-y-auto p-4">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-sm font-medium text-[var(--color-text-primary)]">Group photos · <%= @photos_count %></h3>
+      <button phx-click="upload_photo" class="text-sm text-green-500 font-medium">+ Add photos</button>
+    </div>
+    <%= if @group_photos == [] do %>
+      <div class="text-center py-12">
+        <div class="text-5xl mb-3">📸</div>
+        <p class="text-sm text-[var(--color-text-secondary)]">No photos yet</p>
+        <p class="text-xs text-[var(--color-text-secondary)] mt-1">Be the first to share a photo!</p>
+      </div>
+    <% else %>
+      <div class="grid grid-cols-3 gap-2">
+       <%= for _photo <- Enum.take(@group_photos, 12) do %>
+          <div class="aspect-square rounded-xl overflow-hidden bg-[var(--color-background-secondary)] flex items-center justify-center text-3xl cursor-pointer hover:opacity-80 transition-opacity">
+            📷
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Events Panel -->
+  <div :if={@active_channel == "events"} class="h-[calc(100vh-320px)] overflow-y-auto p-4 space-y-3">
+    <%= if @group_events == [] do %>
+      <div class="text-center py-12">
+        <div class="text-5xl mb-3">🗓️</div>
+        <p class="text-sm text-[var(--color-text-secondary)]">No events planned</p>
+        <p class="text-xs text-[var(--color-text-secondary)] mt-1">Organize a hike, meetup, or trip!</p>
+      </div>
+    <% end %>
+
+    <%= for event <- @group_events do %>
+      <div class="bg-[var(--color-background-primary)] border border-[var(--color-border-tertiary)] rounded-xl overflow-hidden">
+        <div class="p-4">
+          <div class="flex items-start gap-3">
+            <div class="w-14 flex-shrink-0 text-center bg-green-50 dark:bg-green-950 rounded-lg py-2">
+              <div class="text-xl font-bold text-green-600 dark:text-green-400">15</div>
+              <div class="text-[10px] text-green-600 dark:text-green-400 font-medium">APR</div>
+            </div>
+            <div class="flex-1">
+              <h4 class="text-sm font-semibold text-[var(--color-text-primary)]"><%= event.name %></h4>
+              <p class="text-xs text-[var(--color-text-secondary)] mt-1"><%= event.description %></p>
+              <div class="flex items-center gap-3 mt-2 text-xs text-[var(--color-text-secondary)]">
+                <span>📍 <%= event.location %></span>
+                <span>🕐 6:00 AM</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center justify-between mt-3 pt-3 border-t border-[var(--color-border-tertiary)]">
+            <span class="text-xs text-green-600 dark:text-green-400 font-medium">✅ 12 going</span>
+            <button phx-click="rsvp_event" phx-value-event-id={event.id} phx-value-status="going" class="px-4 py-1.5 bg-green-500 text-white text-xs font-medium rounded-full hover:bg-green-600 transition-colors">Going</button>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Convoy Panel -->
+  <div :if={@active_channel == "convoy"} class="h-[calc(100vh-320px)] overflow-y-auto p-4 space-y-4">
+    <%= if @active_convoy do %>
+      <div class="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-2xl">🚗</span>
+          <h3 class="text-base font-semibold text-amber-800 dark:text-amber-300"><%= @active_convoy.name %></h3>
+        </div>
+        <p class="text-xs text-amber-700 dark:text-amber-400 mb-3">📍 Destination: <%= @active_convoy.destination %></p>
+
+        <div class="grid grid-cols-3 gap-2 mb-3">
+          <div class="bg-white dark:bg-amber-900/30 rounded-lg p-2 text-center">
+            <div class="text-lg font-bold text-amber-800 dark:text-amber-300"><%= @convoy_stats.distance %></div>
+            <div class="text-[10px] text-amber-600 dark:text-amber-400">To destination</div>
+          </div>
+          <div class="bg-white dark:bg-amber-900/30 rounded-lg p-2 text-center">
+            <div class="text-lg font-bold text-amber-800 dark:text-amber-300"><%= @sharing_count %></div>
+            <div class="text-[10px] text-amber-600 dark:text-amber-400">Sharing location</div>
+          </div>
+          <div class="bg-white dark:bg-amber-900/30 rounded-lg p-2 text-center">
+            <div class="text-lg font-bold text-amber-800 dark:text-amber-300"><%= @convoy_stats.eta %></div>
+            <div class="text-[10px] text-amber-600 dark:text-amber-400">ETA</div>
+          </div>
+        </div>
+
+        <div class="flex gap-2">
+          <button phx-click="share_location" class="flex-1 py-2 bg-amber-500 text-white text-sm font-medium rounded-lg hover:bg-amber-600 transition-colors">📍 Share my location</button>
+          <button phx-click="sos_alert" phx-value-location="current" class="py-2 px-4 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition-colors">🆘 SOS</button>
+        </div>
+      </div>
+
+      <div>
+        <h4 class="text-sm font-medium text-[var(--color-text-primary)] mb-2">Convoy members (<%= @sharing_count %> sharing)</h4>
+        <div class="space-y-2">
+          <%= for participant <- Enum.take(@convoy_updates, 10) do %>
+            <div class="flex items-center gap-3 p-2 bg-[var(--color-background-primary)] border border-[var(--color-border-tertiary)] rounded-lg">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-xs font-medium">
+                <%= String.slice(participant.user.name, 0..2) %>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-medium text-[var(--color-text-primary)]"><%= participant.user.name %></span>
+                  <span class="text-xs text-green-500">● Live</span>
+                </div>
+                <p class="text-xs text-[var(--color-text-secondary)]">Updated <%= format_relative_time(participant.updated_at) %></p>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% else %>
+      <div class="text-center py-12">
+        <div class="text-5xl mb-3">🚗</div>
+        <p class="text-sm text-[var(--color-text-secondary)]">No active convoy</p>
+        <p class="text-xs text-[var(--color-text-secondary)] mt-1">Start a convoy to coordinate travel</p>
+        <button phx-click="start_convoy" class="mt-4 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium">Start convoy →</button>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- CREATE GROUP MODAL - Bottom Sheet Style -->
+<div :if={@show_create_modal} class="fixed inset-0 z-50" phx-click="close_create_modal">
+  <!-- Backdrop (appears above nav but below modal) -->
+  <div class="absolute inset-0 bg-black/50 transition-opacity duration-300" phx-click="close_create_modal"></div>
+  
+  <!-- Modal Sheet - Anchored to bottom -->
+  <div class="absolute inset-x-0 bottom-0 transform transition-transform duration-300 ease-out translate-y-0">
+    <div class="bg-white dark:bg-gray-900 rounded-t-2xl shadow-xl max-h-[85vh] overflow-y-auto">
+      <!-- Drag handle -->
+      <div class="w-12 h-1 bg-gray-300 dark:bg-gray-700 rounded-full mx-auto mt-3 mb-2"></div>
+      
+      <!-- Header -->
+      <div class="flex items-center justify-between px-5 pt-2 pb-3 border-b border-gray-100 dark:border-gray-800">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          Create a group
+        </h3>
+        <button 
+          type="button"
+          phx-click="close_create_modal" 
+          class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex items-center justify-center transition-colors"
+        >
+          <Heroicons.x_mark class="w-5 h-5" />
+        </button>
+      </div>
+
+      <!-- Form -->
+      <form phx-submit="create_group" class="p-5 space-y-5">
+        <div>
+          <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+            Group name <span class="text-red-500">*</span>
+          </label>
+          <input 
+            type="text" 
+            name="group[name]" 
+            placeholder="e.g., Mombasa Road Trip 2026" 
+            class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-white outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-colors" 
+            required 
+          />
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+            Description
+          </label>
+          <textarea 
+            name="group[description]" 
+            placeholder="What is this group about?" 
+            rows="3" 
+            class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-white outline-none resize-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-colors"
+          ></textarea>
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+            Group type
+          </label>
+          <div class="grid grid-cols-2 gap-2">
+            <%= for {type, label} <- [{"trip", "Trip group"}, {"community", "Community"}, {"guide_network", "Guide network"}, {"private", "Private"}] do %>
+              <label class={[
+                "border rounded-xl p-3 cursor-pointer transition-all",
+                if(@new_group.type == type, do: "border-green-500 bg-green-50 dark:bg-green-950/30", else: "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50")
+              ]}>
+                <input type="radio" name="group[type]" value={type} checked={@new_group.type == type} class="hidden" />
+                <div class="text-sm font-medium text-gray-900 dark:text-white"><%= label %></div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <%= case type do
+                    "trip" -> "Journey coordination"
+                    "community" -> "Topic discussion"
+                    "guide_network" -> "Verified guides"
+                    "private" -> "Invite only"
+                  end %>
+                </div>
+              </label>
+            <% end %>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+            Location
+          </label>
+          <input 
+            type="text" 
+            name="group[location]" 
+            placeholder="e.g., Nairobi, Kenya" 
+            class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-white outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-colors" 
+          />
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Optional - helps members find local groups</p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3 pt-2 pb-2">
+          <button 
+            type="button" 
+            phx-click="close_create_modal" 
+            class="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            class="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-colors"
+          >
+            Create group
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
