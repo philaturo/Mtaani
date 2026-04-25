@@ -17,7 +17,8 @@ defmodule Mtaani.Groups.Group do
     field(:trust_score, :integer, default: 0)
     field(:is_active, :boolean, default: true)
 
-    belongs_to(:created_by, User, foreign_key: :created_by_id)
+    belongs_to(:creator, User, foreign_key: :created_by)
+
     has_many(:members, GroupMember, foreign_key: :group_id)
     has_many(:channels, GroupChannel, foreign_key: :group_id)
     has_many(:events, GroupEvent, foreign_key: :group_id)
@@ -40,9 +41,9 @@ defmodule Mtaani.Groups.Group do
       :online_count,
       :trust_score,
       :is_active,
-      :created_by_id
+      :created_by
     ])
-    |> validate_required([:name, :created_by_id])
+    |> validate_required([:name, :created_by])
     |> validate_inclusion(:type, ["trip", "community", "guide_network", "private"])
     |> validate_length(:name, min: 3, max: 255)
     |> validate_number(:trust_score, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)
@@ -52,7 +53,7 @@ defmodule Mtaani.Groups.Group do
 
   def create_changeset(group, attrs, creator_id) do
     group
-    |> changeset(Map.put(attrs, :created_by_id, creator_id))
+    |> changeset(Map.put(attrs, :created_by, creator_id))
     |> put_change(:member_count, 1)
     |> put_change(:trust_score, 0)
   end
