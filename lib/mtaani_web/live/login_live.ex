@@ -137,18 +137,37 @@ defmodule MtaaniWeb.LoginLive do
   end
 
   @impl true
-  def handle_event("update_phone", %{"value" => phone}, socket) do
+  def(handle_event("update_phone", %{"phone" => phone}, socket)) do
     {:noreply, assign(socket, :phone, phone)}
   end
 
   @impl true
-  def handle_event("update_password", %{"value" => password}, socket) do
+  def handle_event("update_password", %{"password" => password}, socket) do
     {:noreply, assign(socket, :password, password)}
   end
 
   @impl true
   def handle_event("toggle_password", _, socket) do
     {:noreply, assign(socket, :show_password, !socket.assigns.show_password)}
+  end
+
+  @impl true
+  def handle_event(
+        "login",
+        %{"phone" => phone, "password" => password, "_csrf_token" => _token},
+        socket
+      ) do
+    # Format phone number with +254 if needed
+    formatted_phone =
+      if String.starts_with?(phone, "0"), do: "+254" <> String.slice(phone, 1..-1), else: phone
+
+    case Mtaani.Accounts.authenticate_user(formatted_phone, password) do
+      {:ok, user} ->
+        {:noreply, push_navigate(socket, to: "/home")}
+
+      {:error, _} ->
+        {:noreply, assign(socket, :error, "Invalid phone number or password")}
+    end
   end
 
   @impl true
