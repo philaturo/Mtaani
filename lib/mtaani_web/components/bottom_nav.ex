@@ -6,7 +6,7 @@ defmodule MtaaniWeb.BottomNav do
 
   def bottom_nav(assigns) do
     ~H"""
-    <nav class="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-onyx to-onyx/95 border-t border-onyx-mauve/20 px-4 py-2 safe-area-inset-bottom">
+    <nav class="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-onyx to-onyx/95 border-t border-onyx-mauve/20 px-4 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
       <div class="max-w-lg mx-auto flex justify-around items-center">
         <.nav_item
           id="nav-home"
