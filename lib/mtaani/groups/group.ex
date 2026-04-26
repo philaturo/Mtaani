@@ -51,6 +51,21 @@ defmodule Mtaani.Groups.Group do
     |> validate_number(:online_count, greater_than_or_equal_to: 0)
   end
 
+  @spec create_changeset(
+          {map(),
+           %{
+             optional(atom()) =>
+               atom()
+               | {:array | :assoc | :embed | :in | :map | :parameterized | :supertype | :try,
+                  any()}
+           }}
+          | %{
+              :__struct__ => atom() | %{:__changeset__ => any(), optional(any()) => any()},
+              optional(atom()) => any()
+            },
+          map(),
+          any()
+        ) :: Ecto.Changeset.t()
   def create_changeset(group, attrs, creator_id) do
     group
     |> changeset(Map.put(attrs, :created_by, creator_id))
