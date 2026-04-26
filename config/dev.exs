@@ -3,7 +3,8 @@ import Config
 # Configure your database
 config :mtaani, Mtaani.Repo,
   username: "postgres",
-  password: "postgres",  # PostgreSQL password
+  # PostgreSQL password
+  password: "postgres",
   database: "mtaani_dev",
   hostname: "localhost",
   port: 5432,
@@ -11,6 +12,7 @@ config :mtaani, Mtaani.Repo,
   show_sensitive_data: true,
   pool_size: 10
 
+# types: Geo.PostGIS
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
@@ -98,6 +100,7 @@ config :redix, :dev,
   port: 6379,
   pool_size: 10,
   sync_connect: true
+
 # ==================== END REDIS CONFIGURATION ====================
 
 # Disable swoosh api client as it is only required for production adapters.
