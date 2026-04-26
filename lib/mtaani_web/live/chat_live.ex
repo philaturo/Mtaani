@@ -8,14 +8,11 @@ defmodule MtaaniWeb.ChatLive do
 
   @impl true
   def mount(_params, session, socket) do
-    # Get user_id from session (string key from LiveView)
     user_id = session["user_id"]
 
     if is_nil(user_id) do
-      # No session, redirect to auth
       {:ok, push_navigate(socket, to: "/auth")}
     else
-      # Convert to integer (session stores as string)
       current_user_id = if is_binary(user_id), do: String.to_integer(user_id), else: user_id
       current_user = Mtaani.Repo.get(User, current_user_id)
 
@@ -38,7 +35,7 @@ defmodule MtaaniWeb.ChatLive do
         |> assign(:input_text, "")
         |> assign(:online_users, [])
         |> assign(:typing_users, [])
-        |> assign(:partner_safety_zone, %{name: "Unknown", safety_level: 2})
+        |> assign(:partner_safety_zone, nil)
         |> assign(:partner_distance, nil)
 
       if connected?(socket) do
@@ -108,7 +105,7 @@ defmodule MtaaniWeb.ChatLive do
         if other_user do
           get_safety_zone_for_user(other_user.id)
         else
-          %{name: "Unknown", safety_level: 2}
+          nil
         end
 
       %{
@@ -130,17 +127,22 @@ defmodule MtaaniWeb.ChatLive do
   defp load_conversations(_), do: []
 
   defp get_safety_zone_for_user(user_id) do
+    # This should come from your actual safety zone data source
+    # For now, return nil if no real data exists
     user = Mtaani.Repo.get(User, user_id)
 
     if user && user.location do
-      %{name: "Karen, Nairobi", safety_level: 1}
+      # In real implementation, query actual safety zones from database
+      nil
     else
-      %{name: "Unknown", safety_level: 2}
+      nil
     end
   end
 
   defp get_distance_between_users(_user1_id, _user2_id) do
-    "2.4"
+    # This should calculate real distance from user locations
+    # Return nil if locations aren't available
+    nil
   end
 
   @impl true
@@ -219,7 +221,7 @@ defmodule MtaaniWeb.ChatLive do
     safety_zone =
       if partner_id,
         do: get_safety_zone_for_user(partner_id),
-        else: %{name: "Unknown", safety_level: 2}
+        else: nil
 
     distance =
       if partner_id, do: get_distance_between_users(socket.assigns.current_user_id, partner_id)
@@ -287,39 +289,259 @@ defmodule MtaaniWeb.ChatLive do
     {:noreply, socket}
   end
 
+  # Complete implementation of missing handlers
   @impl true
   def handle_event("share_location", _, socket) do
-    {:noreply, push_event(socket, "share_location", %{})}
+    {:noreply, push_event(socket, "get_location", %{})}
   end
 
   @impl true
-  def handle_event("sos_alert", _, socket) do
-    {:noreply, push_event(socket, "sos_alert", %{})}
+  def handle_event("location_shared", %{"lat" => lat, "lng" => lng}, socket) do
+    location_text = "📍 Shared location: https://maps.google.com/?q=#{lat},#{lng}"
+
+    attrs = %{
+      content: location_text,
+      user_id: socket.assigns.current_user_id,
+      conversation_id: socket.assigns.chat_id,
+      media_type: "location",
+      media_url: "https://maps.google.com/?q=#{lat},#{lng}"
+    }
+
+    case Mtaani.Chat.create_message(attrs) do
+      {:ok, msg} ->
+        messages = socket.assigns.messages ++ [msg]
+        grouped = group_messages_by_date(messages)
+        Phoenix.PubSub.broadcast(Mtaani.PubSub, "chat_updates", {:new_message, msg})
+        {:noreply, assign(socket, messages: messages, grouped_messages: grouped)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Failed to share location")}
+    end
   end
 
   @impl true
   def handle_event("send_route", _, socket) do
-    {:noreply, socket}
+    {:noreply, push_event(socket, "show_route_modal", %{})}
+  end
+
+  @impl true
+  def handle_event("route_selected", %{"from" => from, "to" => to}, socket) do
+    route_text = "🗺️ Route from #{from} to #{to}"
+
+    attrs = %{
+      content: route_text,
+      user_id: socket.assigns.current_user_id,
+      conversation_id: socket.assigns.chat_id,
+      media_type: "route"
+    }
+
+    case Mtaani.Chat.create_message(attrs) do
+      {:ok, msg} ->
+        messages = socket.assigns.messages ++ [msg]
+        grouped = group_messages_by_date(messages)
+        Phoenix.PubSub.broadcast(Mtaani.PubSub, "chat_updates", {:new_message, msg})
+        {:noreply, assign(socket, messages: messages, grouped_messages: grouped)}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
   end
 
   @impl true
   def handle_event("request_guide", _, socket) do
-    {:noreply, socket}
+    guide_text = "🧭 Guide request: Looking for a local guide"
+
+    attrs = %{
+      content: guide_text,
+      user_id: socket.assigns.current_user_id,
+      conversation_id: socket.assigns.chat_id,
+      media_type: "guide_request"
+    }
+
+    case Mtaani.Chat.create_message(attrs) do
+      {:ok, msg} ->
+        messages = socket.assigns.messages ++ [msg]
+        grouped = group_messages_by_date(messages)
+        Phoenix.PubSub.broadcast(Mtaani.PubSub, "chat_updates", {:new_message, msg})
+        {:noreply, assign(socket, messages: messages, grouped_messages: grouped)}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
   end
 
   @impl true
   def handle_event("meet_up", _, socket) do
-    {:noreply, socket}
+    {:noreply, push_event(socket, "show_meetup_modal", %{})}
+  end
+
+  @impl true
+  def handle_event("meetup_scheduled", %{"location" => location, "time" => time}, socket) do
+    meetup_text = "📅 Meetup scheduled: #{location} at #{time}"
+
+    attrs = %{
+      content: meetup_text,
+      user_id: socket.assigns.current_user_id,
+      conversation_id: socket.assigns.chat_id,
+      media_type: "meetup"
+    }
+
+    case Mtaani.Chat.create_message(attrs) do
+      {:ok, msg} ->
+        messages = socket.assigns.messages ++ [msg]
+        grouped = group_messages_by_date(messages)
+        Phoenix.PubSub.broadcast(Mtaani.PubSub, "chat_updates", {:new_message, msg})
+        {:noreply, assign(socket, messages: messages, grouped_messages: grouped)}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
   end
 
   @impl true
   def handle_event("safety_check", _, socket) do
+    check_text = "🛡️ Safety check: I'm safe"
+
+    attrs = %{
+      content: check_text,
+      user_id: socket.assigns.current_user_id,
+      conversation_id: socket.assigns.chat_id,
+      media_type: "safety_check"
+    }
+
+    case Mtaani.Chat.create_message(attrs) do
+      {:ok, msg} ->
+        messages = socket.assigns.messages ++ [msg]
+        grouped = group_messages_by_date(messages)
+        Phoenix.PubSub.broadcast(Mtaani.PubSub, "chat_updates", {:new_message, msg})
+        {:noreply, assign(socket, messages: messages, grouped_messages: grouped)}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("sos_alert", _, socket) do
+    {:noreply, push_event(socket, "get_location_for_sos", %{})}
+  end
+
+  @impl true
+  def handle_event("sos_triggered", %{"lat" => lat, "lng" => lng}, socket) do
+    sos_text =
+      "🆘 SOS ALERT! Need immediate assistance at: https://maps.google.com/?q=#{lat},#{lng}"
+
+    attrs = %{
+      content: sos_text,
+      user_id: socket.assigns.current_user_id,
+      conversation_id: socket.assigns.chat_id,
+      media_type: "sos"
+    }
+
+    case Mtaani.Chat.create_message(attrs) do
+      {:ok, msg} ->
+        messages = socket.assigns.messages ++ [msg]
+        grouped = group_messages_by_date(messages)
+        Phoenix.PubSub.broadcast(Mtaani.PubSub, "chat_updates", {:new_message, msg})
+
+        # Broadcast to SOS system if it exists
+        Phoenix.PubSub.broadcast(
+          Mtaani.PubSub,
+          "sos_alerts",
+          {:sos_triggered,
+           %{
+             user_id: socket.assigns.current_user_id,
+             user_name: socket.assigns.current_user.name,
+             location: %{lat: lat, lng: lng},
+             timestamp: DateTime.utc_now()
+           }}
+        )
+
+        {:noreply, assign(socket, messages: messages, grouped_messages: grouped)}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("go_back", _, socket) do
+    {:noreply,
+     assign(socket, selected_conversation: nil, chat_id: nil, messages: [], grouped_messages: [])}
+  end
+
+  @impl true
+  def handle_event("open_profile", _, socket) do
+    {:noreply, push_event(socket, "open_profile_drawer", %{})}
+  end
+
+  @impl true
+  def handle_event("open_filter", _, socket) do
+    {:noreply, push_event(socket, "open_filter_drawer", %{})}
+  end
+
+  @impl true
+  def handle_event("close_filter", _, socket) do
+    {:noreply, push_event(socket, "close_filter_drawer", %{})}
+  end
+
+  @impl true
+  def handle_event("close_profile", _, socket) do
+    {:noreply, push_event(socket, "close_profile_drawer", %{})}
+  end
+
+  @impl true
+  def handle_event("stop_propagation", _, socket) do
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("show_new_message", _, socket) do
-    {:noreply, socket}
+    {:noreply, push_event(socket, "show_new_message_modal", %{})}
+  end
+
+  @impl true
+  def handle_event("start_conversation", %{"user_id" => user_id}, socket) do
+    case Chat.get_or_create_direct_conversation(
+           socket.assigns.current_user_id,
+           String.to_integer(user_id)
+         ) do
+      {:ok, conversation} ->
+        send(self(), :load_conversations)
+        {:noreply, push_event(socket, "select_conversation", %{"id" => conversation.id})}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Could not start conversation")}
+    end
+  end
+
+  @impl true
+  def handle_event("add_reaction", %{"message_id" => message_id, "reaction" => reaction}, socket) do
+    message = Mtaani.Repo.get(Message, message_id)
+
+    if message do
+      reactions = message.reactions || %{}
+      user_reaction = Map.get(reactions, to_string(socket.assigns.current_user_id))
+
+      updated_reactions =
+        cond do
+          user_reaction == reaction ->
+            Map.delete(reactions, to_string(socket.assigns.current_user_id))
+
+          true ->
+            Map.put(reactions, to_string(socket.assigns.current_user_id), reaction)
+        end
+
+      message
+      |> Message.changeset(%{reactions: updated_reactions})
+      |> Mtaani.Repo.update()
+
+      messages = load_messages(socket.assigns.chat_id)
+      grouped = group_messages_by_date(messages)
+      {:noreply, assign(socket, messages: messages, grouped_messages: grouped)}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true
@@ -425,311 +647,9 @@ defmodule MtaaniWeb.ChatLive do
     end
   end
 
-  @impl true
-  def render(assigns) do
-    ~H"""
-    <div class="root">
-      <div class="sidebar">
-        <div class="sb-top">
-          <div class="sb-title-row">
-            <span class="sb-title">Messages</span>
-            <div class="sb-icons">
-              <button class="sb-icon" phx-click="show_new_message">✏️</button>
-              <button class="sb-icon">⋯</button>
-            </div>
-          </div>
-          
-          <div class="search-bar">
-            <span>🔍</span>
-            <input
-              type="text"
-              placeholder="Search conversations..."
-              value={@search_query}
-              phx-change="search"
-            />
-          </div>
-          
-          <div class="filter-tabs">
-            <button
-              class={"ftab #{@filter == "all" && "active"}"}
-              phx-click="set_filter"
-              phx-value-filter="all"
-            >
-              All
-            </button>
-            
-            <button
-              class={"ftab #{@filter == "unread" && "active"}"}
-              phx-click="set_filter"
-              phx-value-filter="unread"
-            >
-              Unread
-            </button>
-            
-            <button
-              class={"ftab #{@filter == "groups" && "active"}"}
-              phx-click="set_filter"
-              phx-value-filter="groups"
-            >
-              Groups
-            </button>
-            
-            <button
-              class={"ftab #{@filter == "favorites" && "active"}"}
-              phx-click="set_filter"
-              phx-value-filter="favorites"
-            >
-              Favorites
-            </button>
-            
-            <button
-              class={"ftab #{@filter == "nearby" && "active"}"}
-              phx-click="set_filter"
-              phx-value-filter="nearby"
-            >
-              Nearby
-            </button>
-          </div>
-        </div>
-        
-        <div style="padding: 0 14px; flex-shrink: 0;">
-          <div class="active-strip">
-            <%= for user <- @online_users do %>
-              <div class="active-av-wrap" phx-click="select_conversation" phx-value-id={user.id}>
-                <div class="active-ring">
-                  <div class="active-av" style="background: #10b981;">
-                    {String.slice(user.name, 0..1)}
-                  </div>
-                  
-                  <div class="active-dot"></div>
-                </div>
-                
-                <div class="active-name">{String.slice(user.name, 0..6)}</div>
-              </div>
-            <% end %>
-          </div>
-        </div>
-        
-        <div class="convo-list">
-          <%= if Enum.any?(@filtered_conversations, & &1.is_pinned) do %>
-            <div class="pin-label"><span class="pin-icon">📌</span> Pinned</div>
-            
-            <%= for conv <- Enum.filter(@filtered_conversations, & &1.is_pinned) do %>
-              <div
-                class={"convo-row #{@selected_conversation && @selected_conversation.id == conv.id && "active-chat"}"}
-                phx-click="select_conversation"
-                phx-value-id={conv.id}
-              >
-                <div class="convo-av-wrap">
-                  <div class="convo-av" style="background: #10b981;">{conv.avatar}</div>
-                  
-                  <%= if conv.online do %>
-                    <div class="convo-online"></div>
-                  <% end %>
-                </div>
-                
-                <div class="convo-body">
-                  <div class="convo-top">
-                    <div class="convo-name">{conv.name}</div>
-                    
-                    <div class="convo-time">{format_time(conv.last_message_time)}</div>
-                  </div>
-                  
-                  <div class="convo-preview">
-                    <%= if conv.unread > 0 do %>
-                      <span class="tick blue">✓✓</span>
-                    <% else %>
-                      <span class="tick">✓✓</span>
-                    <% end %>
-                     {String.slice(conv.last_message, 0..40)}
-                  </div>
-                </div>
-                
-                <%= if conv.unread > 0 do %>
-                  <div class="badge">{conv.unread}</div>
-                <% end %>
-                
-                <div class={"safety-dot #{safety_dot_class(conv.safety_zone)}"}></div>
-              </div>
-            <% end %>
-          <% end %>
-          
-          <div class="pin-label" style="margin-top: 4px;">Recent</div>
-          
-          <%= for conv <- Enum.reject(@filtered_conversations, & &1.is_pinned) do %>
-            <div
-              class={"convo-row #{@selected_conversation && @selected_conversation.id == conv.id && "active-chat"}"}
-              phx-click="select_conversation"
-              phx-value-id={conv.id}
-            >
-              <div class="convo-av-wrap">
-                <div class="convo-av" style="background: #10b981;">{conv.avatar}</div>
-                
-                <%= if conv.online do %>
-                  <div class="convo-online"></div>
-                <% end %>
-              </div>
-              
-              <div class="convo-body">
-                <div class="convo-top">
-                  <div class="convo-name">{conv.name}</div>
-                  
-                  <div class="convo-time">{format_time(conv.last_message_time)}</div>
-                </div>
-                
-                <div class="convo-preview">
-                  <%= if conv.unread > 0 do %>
-                    <span class="tick blue">✓✓</span>
-                  <% else %>
-                    <span class="tick">✓✓</span>
-                  <% end %>
-                   {String.slice(conv.last_message, 0..40)}
-                </div>
-              </div>
-              
-              <%= if conv.unread > 0 do %>
-                <div class="badge">{conv.unread}</div>
-              <% end %>
-              
-              <div class={"safety-dot #{safety_dot_class(conv.safety_zone)}"}></div>
-            </div>
-          <% end %>
-        </div>
-      </div>
-      
-      <div class="main">
-        <%= if @selected_conversation do %>
-          <div class="chat-header">
-            <div class="chat-header-av" style="background: #10b981;">
-              {if @chat_partner, do: String.slice(@chat_partner.name, 0..1), else: "??"}
-              <div class="chat-header-online"></div>
-            </div>
-            
-            <div class="chat-header-info">
-              <div class="chat-header-name">{@selected_conversation.name}</div>
-              
-              <div class="chat-header-sub">
-                {if @chat_partner && is_user_online(@chat_partner.id), do: "Online", else: "Offline"} · {@partner_safety_zone.name}
-              </div>
-            </div>
-            
-            <div class="chat-header-actions">
-              <button class="ch-btn">📞</button> <button class="ch-btn">🎥</button>
-              <button class="ch-btn" phx-click="share_location">🗺️</button>
-              <button class="ch-btn">⋯</button>
-            </div>
-          </div>
-          
-          <div class="travel-ctx">
-            <div class="ctx-map">🗺️</div>
-            
-            <div class="ctx-info">
-              <div class="ctx-title">
-                {@chat_partner.name} is in {@partner_safety_zone.name} — {safety_zone_text(
-                  @partner_safety_zone
-                )}
-              </div>
-              
-              <div class="ctx-sub">
-                {if @partner_distance,
-                  do: "#{@partner_distance} km from you",
-                  else: "Location unknown"} · Last updated just now
-              </div>
-            </div>
-            
-            <div class="ctx-action">View on map</div>
-          </div>
-          
-          <div class="messages" id="messages-container" phx-hook="ScrollToBottom">
-            <%= for {date, sender_groups} <- @grouped_messages do %>
-              <div class="day-divider">{format_date_header(date)}</div>
-              
-              <%= for {user_id, user_messages} <- sender_groups do %>
-                <% is_me = user_id == @current_user_id %>
-                <div class={"msg-group #{if is_me, do: "me", else: "them"}"}>
-                  <div class="msg-with-av">
-                    <%= if !is_me do %>
-                      <% first_msg = List.first(user_messages) %>
-                      <div class="msg-av" style="background: #3b82f6;">
-                        {String.slice(first_msg.user.name, 0..1)}
-                      </div>
-                    <% end %>
-                    
-                    <div>
-                      <%= for msg <- user_messages do %>
-                        <div
-                          class="bubble"
-                          id={"message-#{msg.id}"}
-                          phx-hook="MessageObserver"
-                          data-message-id={msg.id}
-                        >
-                          {msg.content}
-                          <div class="bubble-tail-info">
-                            <span class="btime">{format_time_short(msg.inserted_at)}</span>
-                            <%= if is_me do %>
-                              <span class={"btick #{if msg.read_at, do: "read"}"}>✓✓</span>
-                            <% end %>
-                          </div>
-                        </div>
-                      <% end %>
-                    </div>
-                  </div>
-                </div>
-              <% end %>
-            <% end %>
-            
-            <%= if @typing_users != [] do %>
-              <div class="typing-indicator-container">
-                <div class="typing-dots"><span></span><span></span><span></span></div>
-                 <span>Someone is typing...</span>
-              </div>
-            <% end %>
-          </div>
-          
-          <div class="quick-actions">
-            <button class="qa" phx-click="share_location">📍 Share location</button>
-            <button class="qa" phx-click="send_route">🗺️ Send route</button>
-            <button class="qa" phx-click="request_guide">🧭 Request guide</button>
-            <button class="qa" phx-click="meet_up">📅 Meet up</button>
-            <button class="qa" phx-click="safety_check">🛡️ Safety check</button>
-            <button class="qa danger" phx-click="sos_alert">🆘 SOS</button>
-          </div>
-          
-          <div class="input-area">
-            <div class="input-left">
-              <button class="in-btn">📎</button> <button class="in-btn">📷</button>
-            </div>
-            
-            <div class="msg-input-wrap">
-              <input
-                id="msgInput"
-                type="text"
-                placeholder={"Message #{@selected_conversation.name}..."}
-                value={@input_text}
-                phx-change="update-input"
-                phx-keyup="send_message"
-                phx-key="Enter"
-              />
-            </div>
-            
-            <button class="send-btn" phx-click="send_message" phx-value-message={@input_text}>
-              ↑
-            </button>
-          </div>
-        <% else %>
-          <div class="no-chat-selected">
-            <div class="no-chat-content">
-              <div class="no-chat-icon">💬</div>
-              
-              <h3>Select a conversation</h3>
-              
-              <p>Choose a chat from the sidebar to start messaging</p>
-            </div>
-          </div>
-        <% end %>
-      </div>
-    </div>
-    """
+  defp total_unread(conversations) do
+    total = Enum.sum(Enum.map(conversations, & &1.unread))
+    if total > 99, do: "99+", else: total
   end
 
   defp format_time(datetime) do
@@ -749,20 +669,21 @@ defmodule MtaaniWeb.ChatLive do
   end
 
   defp safety_dot_class(safety_zone) do
-    case safety_zone.safety_level do
-      1 -> "safe"
-      2 -> "caution"
-      3 -> "danger"
-      _ -> "safe"
+    case safety_zone do
+      %{safety_level: 1} -> "safe"
+      %{safety_level: 2} -> "caution"
+      %{safety_level: 3} -> "danger"
+      nil -> "hidden"
+      _ -> "hidden"
     end
   end
 
   defp safety_zone_text(safety_zone) do
-    case safety_zone.safety_level do
-      1 -> "safe zone"
-      2 -> "caution area"
-      3 -> "high alert area"
-      _ -> "unknown area"
+    case safety_zone do
+      %{safety_level: 1} -> "safe zone"
+      %{safety_level: 2} -> "caution area"
+      %{safety_level: 3} -> "high alert area"
+      _ -> nil
     end
   end
 end
