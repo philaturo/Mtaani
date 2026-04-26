@@ -5209,10 +5209,92 @@ body.bottom-sheet-open {
 /* ==================== PLAN SECTION STYLES ==================== */
 /* All styles are scoped under .plan-container to avoid affecting other sections */
 
+/* Plan page wrapper - cancels the layout padding */
+.plan-page-wrapper {
+  margin-top: -64px; /* Removes the pt-16 from main layout */
+}
+
+/* Make plan container scrollable without scrollbar */
 .plan-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 0 80px 0;
+  max-height: calc(100vh - 72px); /* Adjust based on your bottom nav height */
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+/* Hide scrollbar for Chrome/Safari/Webkit */
+.plan-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* Ensure smooth scrolling */
+.plan-container {
+  scroll-behavior: smooth;
+}
+
+/* Plan Page Top Bar */
+.plan-container .plan-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0 16px 0;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--color-border-tertiary);
+  margin-top: 0; /* Ensure top bar stays at the top */
+}
+
+.plan-container .plan-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.plan-container .plan-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.plan-container .plan-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--color-text-secondary);
+}
+
+.plan-container .plan-icon-btn:hover {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  transform: scale(1.05);
+}
+
+/* Responsive adjustment */
+@media (max-width: 768px) {
+  .plan-container .plan-title {
+    font-size: 20px;
+  }
+
+  .plan-container .plan-icon-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .plan-page-wrapper {
+    margin-top: -56px; /* Slightly less on mobile if needed */
+  }
 }
 
 /* Hero Section */
@@ -5879,4 +5961,40 @@ body.bottom-sheet-open {
   font-size: 11px;
   color: #f59e0b;
   font-weight: 500;
+}
+
+/* Trip page wrapper - cancels the layout padding */
+.trip-page-wrapper {
+  margin-top: -64px; /* Removes the pt-16 from main layout */
+}
+
+/* Make trip container scrollable without scrollbar */
+.trip-page-wrapper .pb-20 {
+  max-height: calc(100vh - 72px); /* Adjust based on your bottom nav height */
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+/* Hide scrollbar for Chrome/Safari/Webkit */
+.trip-page-wrapper .pb-20::-webkit-scrollbar {
+  display: none;
+}
+
+/* Ensure smooth scrolling */
+.trip-page-wrapper .pb-20 {
+  scroll-behavior: smooth;
+}
+
+/* Mobile responsive adjustment */
+@media (max-width: 768px) {
+  .plan-page-wrapper,
+  .trip-page-wrapper {
+    margin-top: -56px; /* Slightly less on mobile */
+  }
+
+  .plan-container,
+  .trip-page-wrapper .pb-20 {
+    max-height: calc(100vh - 64px);
+  }
 }
