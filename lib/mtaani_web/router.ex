@@ -87,6 +87,7 @@ defmodule MtaaniWeb.Router do
     live "/chat", ChatLive, :index
     live "/groups", GroupsLive, :index
     live "/plan", PlanLive, :index
+    live "/trip/:id", TripLive, :show
     live "/profile", ProfileLive, :index
     live "/profile/:username", ProfileLive, :index
     live "/profile-setup", ProfileSetupLive, :index
