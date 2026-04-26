@@ -466,33 +466,46 @@ defmodule Mtaani.Groups do
     today_start = DateTime.new!(Date.utc_today(), ~T[00:00:00], "Etc/UTC")
 
     message_count =
-      Repo.aggregate(
-        from(m in GroupMessage,
-          where: m.group_id == ^group_id and m.inserted_at > ^one_hour_ago,
-          select: count(m.id)
-        ),
-        :scalar
-      ) || 0
+      case Repo.aggregate(
+             from(m in GroupMessage,
+               where: m.group_id == ^group_id and m.inserted_at > ^one_hour_ago,
+               select: count(m.id)
+             ),
+             :count,
+             []
+           ) do
+        nil -> 0
+        count -> count
+      end
 
     online_count =
-      Repo.aggregate(
-        from(gm in GroupMember,
-          where: gm.group_id == ^group_id and gm.is_online == true,
-          select: count(gm.id)
-        ),
-        :scalar
-      ) || 0
+      case Repo.aggregate(
+             from(gm in GroupMember,
+               where: gm.group_id == ^group_id and gm.is_online == true,
+               select: count(gm.id)
+             ),
+             :count,
+             []
+           ) do
+        nil -> 0
+        count -> count
+      end
 
     event_activity =
-      Repo.aggregate(
-        from(ea in EventAttendee,
-          join: e in assoc(ea, :event),
-          where:
-            e.group_id == ^group_id and ea.inserted_at > ^today_start and ea.status == "going",
-          select: count(ea.id)
-        ),
-        :scalar
-      ) || 0
+      case Repo.aggregate(
+             from(ea in EventAttendee,
+               join: e in assoc(ea, :event),
+               where:
+                 e.group_id == ^group_id and ea.inserted_at > ^today_start and
+                   ea.status == "going",
+               select: count(ea.id)
+             ),
+             :count,
+             []
+           ) do
+        nil -> 0
+        count -> count
+      end
 
     has_convoy =
       Repo.exists?(
@@ -520,13 +533,17 @@ defmodule Mtaani.Groups do
 
     online_count =
       if group_ids != [] do
-        Repo.aggregate(
-          from(gm in GroupMember,
-            where: gm.group_id in ^group_ids and gm.is_online == true,
-            select: count(gm.id)
-          ),
-          :scalar
-        ) || 0
+        case Repo.aggregate(
+               from(gm in GroupMember,
+                 where: gm.group_id in ^group_ids and gm.is_online == true,
+                 select: count(gm.id)
+               ),
+               :count,
+               []
+             ) do
+          nil -> 0
+          count -> count
+        end
       else
         0
       end
@@ -534,22 +551,30 @@ defmodule Mtaani.Groups do
     recent_activity =
       if group_ids != [] do
         message_count =
-          Repo.aggregate(
-            from(m in GroupMessage,
-              where: m.group_id in ^group_ids and m.inserted_at > ^today_start,
-              select: count(m.id)
-            ),
-            :scalar
-          ) || 0
+          case Repo.aggregate(
+                 from(m in GroupMessage,
+                   where: m.group_id in ^group_ids and m.inserted_at > ^today_start,
+                   select: count(m.id)
+                 ),
+                 :count,
+                 []
+               ) do
+            nil -> 0
+            count -> count
+          end
 
         event_count =
-          Repo.aggregate(
-            from(e in GroupEvent,
-              where: e.group_id in ^group_ids and e.inserted_at > ^today_start,
-              select: count(e.id)
-            ),
-            :scalar
-          ) || 0
+          case Repo.aggregate(
+                 from(e in GroupEvent,
+                   where: e.group_id in ^group_ids and e.inserted_at > ^today_start,
+                   select: count(e.id)
+                 ),
+                 :count,
+                 []
+               ) do
+            nil -> 0
+            count -> count
+          end
 
         message_count + event_count
       else
@@ -818,7 +843,8 @@ defmodule Mtaani.Groups do
         if(last_message, do: String.slice(last_message.content, 0..50), else: nil),
       last_message_sender:
         if(last_message && last_message.user, do: last_message.user.name, else: nil),
-      last_activity_time: format_relative_time(last_message.inserted_at),
+      last_activity_time:
+        if(last_message, do: format_relative_time(last_message.inserted_at), else: nil),
       recent_members: recent_members,
       tags: tags,
       unread_count: 0,
