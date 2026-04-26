@@ -1,0 +1,351 @@
+<div class="chat-container" id="chat-container" style="margin-top: -64px;">
+  <!-- SCREEN 1: CONVERSATION LIST -->
+  <div class="screen" id="listScreen" class={if @selected_conversation, do: "off-left", else: ""}>
+    <!-- Top Bar -->
+    <div class="list-topbar">
+      <div class="lt-left">
+        <div class="lt-avatar" phx-click="open_profile">
+          {if @current_user, do: String.slice(@current_user.name, 0..1) |> String.upcase(), else: "U"}
+        </div>
+        <div class="lt-title">Messages</div>
+      </div>
+      <div class="lt-actions">
+        <div class="lt-btn" phx-click="open_filter">⊟</div>
+        <div class="lt-btn" phx-click="show_new_message">✏️</div>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-wrap">
+      <div class="search-bar">
+        <span style="font-size:15px;color:var(--color-text-secondary)">🔍</span>
+        <input
+          type="text"
+          placeholder="Search conversations, people..."
+          value={@search_query}
+          phx-change="search"
+          phx-debounce="300"
+        />
+      </div>
+    </div>
+
+    <!-- Filter Pills -->
+    <div class="filter-pills">
+      <button class={"fpill #{@filter == "all" && "on"}"} phx-click="set_filter" phx-value-filter="all">All</button>
+      <button class={"fpill #{@filter == "unread" && "on"}"} phx-click="set_filter" phx-value-filter="unread">Unread</button>
+      <button class={"fpill #{@filter == "groups" && "on"}"} phx-click="set_filter" phx-value-filter="groups">Groups</button>
+      <button class={"fpill #{@filter == "favorites" && "on"}"} phx-click="set_filter" phx-value-filter="favorites">Favorites</button>
+      <button class={"fpill #{@filter == "guides" && "on"}"} phx-click="set_filter" phx-value-filter="guides">Guides</button>
+      <button class={"fpill #{@filter == "nearby" && "on"}"} phx-click="set_filter" phx-value-filter="nearby">Nearby</button>
+    </div>
+
+    <!-- Active Users Strip -->
+    <div class="active-users">
+      <div class="au-item" phx-click="show_new_message">
+        <div class="au-add">＋</div>
+        <div class="au-name">New chat</div>
+      </div>
+      <%= for user <- Enum.take(@online_users, 10) do %>
+        <div class="au-item" phx-click="select_conversation" phx-value-id={user.id}>
+          <div class="au-ring">
+            <div class="au-av" style="background: #3b82f6;">
+              {String.slice(user.name, 0..1) |> String.upcase()}
+            </div>
+            <div class="au-dot"></div>
+          </div>
+          <div class="au-name">{String.slice(user.name, 0..8)}</div>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Conversation List -->
+    <div class="convo-scroll">
+      <!-- Pinned Section -->
+      <%= if Enum.any?(@filtered_conversations, & &1.is_pinned) do %>
+        <div class="section-label">📌 Pinned</div>
+        <%= for conv <- Enum.filter(@filtered_conversations, & &1.is_pinned) do %>
+          <div
+            class={"convo-row #{@selected_conversation && @selected_conversation.id == conv.id && "active"}"}
+            phx-click="select_conversation"
+            phx-value-id={conv.id}
+          >
+            <div class="cr-av-wrap">
+              <div class="cr-av" style="background: #10b981;">{conv.avatar}</div>
+              <%= if conv.online do %><div class="cr-online"></div><% end %>
+            </div>
+            <div class="cr-body">
+              <div class="cr-top">
+                <div class="cr-name">{conv.name}</div>
+                <div class="cr-time">{format_time(conv.last_message_time)}</div>
+              </div>
+              <div class="cr-preview">
+                <%= if conv.unread > 0 do %><span style="color:#10b981;">●</span><% end %>
+                {String.slice(conv.last_message, 0..45)}
+              </div>
+              <%= if conv.type == "group" do %>
+                <div class="cr-tags">
+                  <span class="cr-tag" style="background:#ecfdf5;color:#065f46">👥 Group</span>
+                </div>
+              <% end %>
+            </div>
+            <div class="cr-right">
+              <%= if conv.unread > 0 do %>
+                <div class="cr-badge">{if conv.unread > 9, do: "9+", else: conv.unread}</div>
+              <% end %>
+              <div class={"safety-pip #{safety_dot_class(conv.safety_zone)}"}></div>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+
+      <!-- Recent Section -->
+      <div class="section-label">Recent</div>
+      
+      <%= for conv <- Enum.reject(@filtered_conversations, & &1.is_pinned) do %>
+        <div
+          class={"convo-row #{@selected_conversation && @selected_conversation.id == conv.id && "active"}"}
+          phx-click="select_conversation"
+          phx-value-id={conv.id}
+        >
+          <div class="cr-av-wrap">
+            <div class="cr-av" style="background: #8b5cf6;">{conv.avatar}</div>
+            <%= if conv.online do %><div class="cr-online"></div><% end %>
+          </div>
+          <div class="cr-body">
+            <div class="cr-top">
+              <div class="cr-name">{conv.name}</div>
+              <div class="cr-time">{format_time(conv.last_message_time)}</div>
+            </div>
+            <div class="cr-preview">
+              {if conv.unread > 0, do: "● ", else: "✓✓ "}
+              {String.slice(conv.last_message, 0..45)}
+            </div>
+            <%= if conv.type == "group" do %>
+              <div class="cr-tags">
+                <span class="cr-tag" style="background:#ecfdf5;color:#065f46">👥 Group</span>
+              </div>
+            <% end %>
+          </div>
+          <div class="cr-right">
+            <%= if conv.unread > 0 do %>
+              <div class="cr-badge">{if conv.unread > 9, do: "9+", else: conv.unread}</div>
+            <% end %>
+            <%= if conv.safety_zone do %>
+              <div class={"safety-pip #{safety_dot_class(conv.safety_zone)}"}></div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Empty State -->
+      <%= if Enum.empty?(@filtered_conversations) do %>
+        <div style="text-align: center; padding: 48px 20px;">
+          <div style="font-size: 48px; margin-bottom: 12px;">💬</div>
+          <div style="font-size: 14px; color: var(--color-text-secondary);">No conversations yet</div>
+          <button 
+            phx-click="show_new_message" 
+            style="margin-top: 16px; padding: 10px 24px; background: #10b981; color: white; border: none; border-radius: 24px; cursor: pointer; font-size: 14px;"
+          >
+            Start a chat
+          </button>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="nav">
+      <div class="ni" phx-click="navigate" phx-value-page="home"><div class="ni-icon">🏠</div><div class="ni-lbl">Home</div></div>
+      <div class="ni" phx-click="navigate" phx-value-page="map"><div class="ni-icon">🗺️</div><div class="ni-lbl">Map</div></div>
+      <div class="ni on"><div class="ni-icon" style="position:relative">💬<span class="ni-badge">{total_unread(@filtered_conversations)}</span></div><div class="ni-lbl" style="color:#10b981;font-weight:500">Chat</div></div>
+      <div class="ni" phx-click="navigate" phx-value-page="groups"><div class="ni-icon">👥</div><div class="ni-lbl">Groups</div></div>
+      <div class="ni" phx-click="navigate" phx-value-page="plan"><div class="ni-icon">🗓</div><div class="ni-lbl">Plan</div></div>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: CHAT VIEW -->
+  <div class={"screen #{if @selected_conversation, do: "", else: "off-right"}"} id="chatScreen">
+    <!-- Chat Header -->
+    <div class="chat-topbar">
+      <div class="back-btn" phx-click="go_back">←</div>
+      <div class="ct-av" style="background: #3b82f6;">
+        {if @chat_partner, do: String.slice(@chat_partner.name, 0..1) |> String.upcase(), else: "??"}
+        <%= if @chat_partner && is_user_online(@chat_partner.id) do %><div class="ct-online"></div><% end %>
+      </div>
+      <div class="ct-info">
+        <div class="ct-name">{if @selected_conversation, do: @selected_conversation.name, else: ""}</div>
+        <div class="ct-sub">
+          <%= if @chat_partner do %>
+            <%= if is_user_online(@chat_partner.id), do: "Online", else: "Offline" %>
+            <%= if @partner_safety_zone do %>· {@partner_safety_zone.name}<% end %>
+          <% end %>
+        </div>
+      </div>
+      <div class="ct-actions">
+        <button class="ct-btn">📞</button>
+        <button class="ct-btn" phx-click="share_location">🗺️</button>
+        <button class="ct-btn">⋯</button>
+      </div>
+    </div>
+
+    <!-- Travel Context Bar (only if safety zone data exists) -->
+    <%= if @partner_safety_zone do %>
+      <div class="travel-bar">
+        <div class="tb-icon">🗺️</div>
+        <div class="tb-info">
+          <div class="tb-title">{if @chat_partner, do: @chat_partner.name, else: "User"} is in {@partner_safety_zone.name} — {safety_zone_text(@partner_safety_zone)}</div>
+          <div class="tb-sub">
+            <%= if @partner_distance do %>{@partner_distance} km from you<% else %>Location unknown<% end %> · Updated just now
+          </div>
+        </div>
+        <div class="tb-action">View map</div>
+      </div>
+    <% end %>
+
+    <!-- Messages Area -->
+    <div class="msgs" id="msgArea" phx-hook="ScrollToBottom">
+      <%= if Enum.empty?(@grouped_messages) do %>
+        <div style="text-align: center; padding: 60px 20px;">
+          <div style="font-size: 48px; margin-bottom: 12px;">💬</div>
+          <div style="font-size: 14px; color: var(--color-text-secondary);">No messages yet</div>
+          <div style="font-size: 12px; color: var(--color-text-secondary); margin-top: 4px;">Send a message to start the conversation</div>
+        </div>
+      <% else %>
+        <%= for {date, sender_groups} <- @grouped_messages do %>
+          <div class="day-sep">{format_date_header(date)}</div>
+          
+          <%= for {user_id, user_messages} <- sender_groups do %>
+            <% first_msg = List.first(user_messages) %>
+            <% is_me = user_id == @current_user_id %>
+            <div class={"mrow #{if is_me, do: "me", else: "them"}"}>
+              <%= if !is_me do %>
+                <div class="m-av" style="background: #3b82f6;">
+                  {String.slice(first_msg.user.name, 0..1) |> String.upcase()}
+                </div>
+              <% end %>
+              <div class="mcol">
+                <%= if !is_me do %>
+                  <div class="msender">{first_msg.user.name}</div>
+                <% end %>
+                <%= for msg <- user_messages do %>
+                  <div
+                    class="mbub"
+                    id={"message-#{msg.id}"}
+                    phx-hook="MessageObserver"
+                    data-message-id={msg.id}
+                  >
+                    {msg.content}
+                    <div style="display:flex;justify-content:flex-end;gap:3px;margin-top:3px">
+                      <span style={"font-size:9.5px; color: #{if is_me, do: "rgba(255,255,255,0.65)", else: "var(--color-text-secondary)"}"}>
+                        {format_time_short(msg.inserted_at)}
+                      </span>
+                      <%= if is_me do %>
+                        <span style={"font-size:11px; color: #{if msg.read_at, do: "#fff", else: "rgba(255,255,255,0.6)"}"}>
+                          {if msg.read_at, do: "✓✓", else: "✓"}
+                        </span>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+                <!-- Reactions would go here -->
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      <% end %>
+
+      <!-- Typing Indicator -->
+      <%= if @typing_users != [] do %>
+        <div class="typing-row">
+          <div class="td"></div><div class="td"></div><div class="td"></div>
+          <span style="font-size:11px;color:var(--color-text-secondary);margin-left:6px">Someone is typing…</span>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-acts">
+      <button class="qa-chip" phx-click="share_location">📍 Share location</button>
+      <button class="qa-chip" phx-click="send_route">🗺️ Send route</button>
+      <button class="qa-chip" phx-click="request_guide">🧭 Get guide</button>
+      <button class="qa-chip" phx-click="meet_up">📅 Meet up</button>
+      <button class="qa-chip" phx-click="safety_check">🛡️ Safety check</button>
+      <button class="qa-chip danger" phx-click="sos_alert">🆘 SOS</button>
+    </div>
+
+    <!-- Input Area -->
+    <div class="chat-input">
+      <button class="ci-btn">📎</button>
+      <button class="ci-btn">📷</button>
+      <div class="ci-wrap">
+        <input
+          id="msgIn"
+          placeholder={"Message #{if @selected_conversation, do: @selected_conversation.name, else: "..."}"}
+          value={@input_text}
+          phx-change="update-input"
+          phx-keyup="send_message"
+          phx-key="Enter"
+        />
+      </div>
+      <button class="send-btn" phx-click="send_message" phx-value-message={@input_text}>↑</button>
+    </div>
+  </div>
+
+  <!-- FILTER BOTTOM SHEET -->
+  <div class="drawer-overlay" id="filterDrawer" phx-click="close_filter">
+    <div class="filter-drawer" phx-click="stop_propagation">
+      <div class="fd-handle"></div>
+      <div class="fd-title">Filter conversations</div>
+      <div class="fd-section">SHOW</div>
+      <div class="fd-opts">
+        <button class={"fd-opt #{@filter == "all" && "on"}"} phx-click="set_filter" phx-value-filter="all">All messages</button>
+        <button class={"fd-opt #{@filter == "unread" && "on"}"} phx-click="set_filter" phx-value-filter="unread">Unread only</button>
+        <button class={"fd-opt #{@filter == "groups" && "on"}"} phx-click="set_filter" phx-value-filter="groups">Groups</button>
+      </div>
+      <div class="fd-section">SORT BY</div>
+      <div class="fd-opts">
+        <button class="fd-opt on" phx-click="sort_by" phx-value-sort="recent">Recent first</button>
+        <button class="fd-opt" phx-click="sort_by" phx-value-sort="unread">Unread first</button>
+      </div>
+      <div class="fd-section">SAFETY ZONE</div>
+      <div class="fd-opts">
+        <button class="fd-opt on" phx-click="filter_by_safety" phx-value-zone="safe">🟢 Safe contacts</button>
+        <button class="fd-opt" phx-click="filter_by_safety" phx-value-zone="caution">🟡 Caution zone</button>
+      </div>
+      <button class="fd-apply" phx-click="close_filter">Apply filters</button>
+    </div>
+  </div>
+
+  <!-- PROFILE SIDE DRAWER -->
+  <div class="pd-overlay" id="pdOverlay" phx-click="close_profile"></div>
+  <div class="profile-drawer" id="profileDrawer">
+    <div class="pd-top">
+      <div class="pd-av">{String.slice(@current_user.name, 0..1) |> String.upcase()}</div>
+      <div class="pd-name">{@current_user.name}</div>
+      <div class="pd-handle">@{String.downcase(String.replace(@current_user.name, " ", ""))} · Nairobi</div>
+      <div class="pd-badge">🎒 Traveler · Verified</div>
+    </div>
+    <div class="pd-nav">
+      <div class="pd-item" phx-click="navigate" phx-value-page="profile">
+        <div class="pd-icon" style="background:#ecfdf5">👤</div>
+        <div><div class="pd-label">My profile</div><div class="pd-sub">Edit bio, photo, vibe tags</div></div>
+      </div>
+      <div class="pd-item" phx-click="navigate" phx-value-page="my-places">
+        <div class="pd-icon" style="background:#eff6ff">🗺️</div>
+        <div><div class="pd-label">My places</div><div class="pd-sub">Track visited locations</div></div>
+      </div>
+      <div class="pd-item" phx-click="navigate" phx-value-page="my-trips">
+        <div class="pd-icon" style="background:#fff7ed">🗓</div>
+        <div><div class="pd-label">My trips</div><div class="pd-sub">Upcoming · Completed</div></div>
+      </div>
+      <div class="pd-divider"></div>
+      <div class="pd-item" phx-click="navigate" phx-value-page="safety">
+        <div class="pd-icon" style="background:#fef2f2">🛡</div>
+        <div><div class="pd-label">Safety settings</div><div class="pd-sub">Emergency contacts, SOS</div></div>
+      </div>
+      <div class="pd-item" phx-click="navigate" phx-value-page="settings">
+        <div class="pd-icon" style="background:#f8fafc">⚙️</div>
+        <div><div class="pd-label">Settings</div><div class="pd-sub">Privacy, notifications</div></div>
+      </div>
+    </div>
+  </div>
+</div>
