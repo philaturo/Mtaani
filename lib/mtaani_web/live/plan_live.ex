@@ -201,13 +201,38 @@ defmodule MtaaniWeb.PlanLive do
     {:noreply, push_navigate(socket, to: "/#{page}")}
   end
 
+  @impl true
+  def handle_event("search", _params, socket) do
+    # Open search modal or navigate to search page
+    {:noreply, put_flash(socket, :info, "Search feature coming soon!")}
+  end
+
   # ==================== RENDER FUNCTION ====================
 
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="plan-container">
-      <div class="pb-20">
+    <div class="plan-page-wrapper">
+      <div class="plan-container">
+        <!-- Plan Page Top Bar -->
+        <div class="plan-top-bar">
+          <h1 class="plan-title">Plan</h1>
+          
+          <div class="plan-actions">
+            <button class="plan-icon-btn" phx-click="search">
+              🔍
+            </button>
+            
+            <button class="plan-icon-btn" phx-click="open_create_modal">
+              ＋
+            </button>
+            
+            <button class="plan-icon-btn" phx-click="navigate" phx-value-page="profile">
+              👤
+            </button>
+          </div>
+        </div>
+        
         <.hero_section
           current_user={@current_user}
           selected_destination={@selected_destination}
