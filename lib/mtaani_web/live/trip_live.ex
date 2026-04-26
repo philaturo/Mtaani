@@ -469,86 +469,88 @@ defmodule MtaaniWeb.TripLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="pb-20">
-      <.trip_header
-        trip={@trip}
-        participants={@participants}
-        online_count={@online_count}
-        back_to_plan="back_to_plan"
-        invite_user="invite_user"
-      /> <.sub_tabs selected={@selected_subtab} switch_subtab="switch_subtab" />
-      <%= if @selected_subtab == "itinerary" do %>
-        <.itinerary_tab
-          itinerary_items={@itinerary_items}
-          trip={@trip}
-          show_add_item_modal={@show_add_item_modal}
-          new_item_title={@new_item_title}
-          new_item_type={@new_item_type}
-          new_item_day={@new_item_day}
-          new_item_time={@new_item_time}
-          new_item_cost={@new_item_cost}
-          open_add_item="open_add_item"
-          close_add_item="close_add_item"
-          update_new_item="update_new_item"
-          select_item_type="select_item_type"
-          create_itinerary_item="create_itinerary_item"
-          vote_item="vote_item"
-        />
-      <% end %>
-      
-      <%= if @selected_subtab == "budget" do %>
-        <.budget_tab
-          budget_summary={@budget_summary}
+    <div class="trip-page-wrapper">
+      <div class="pb-20">
+        <.trip_header
           trip={@trip}
           participants={@participants}
-          current_user={@current_user}
-          show_add_budget_modal={@show_add_budget_modal}
-          new_budget_category={@new_budget_category}
-          new_budget_description={@new_budget_description}
-          new_budget_amount={@new_budget_amount}
-          open_add_budget="open_add_budget"
-          close_add_budget="close_add_budget"
-          update_budget_field="update_budget_field"
-          create_budget_item="create_budget_item"
-        />
-      <% end %>
-      
-      <%= if @selected_subtab == "transport" do %>
-        <.transport_tab />
-      <% end %>
-      
-      <%= if @selected_subtab == "packing" do %>
-        <.packing_tab
-          packing_items={@packing_items}
-          trip={@trip}
-          toggle_packing_item="toggle_packing_item"
-          generate_ai_packing="generate_ai_packing"
-        />
-      <% end %>
-      
-      <%= if @selected_subtab == "vibe" do %>
-        <.vibe_tab
-          vibe_pins={@vibe_pins}
-          trip={@trip}
-          show_add_pin_modal={@show_add_pin_modal}
-          new_pin_emoji={@new_pin_emoji}
-          new_pin_caption={@new_pin_caption}
-          open_add_pin="open_add_pin"
-          close_add_pin="close_add_pin"
-          update_pin_field="update_pin_field"
-          create_vibe_pin="create_vibe_pin"
-        />
-      <% end %>
-      
-      <%= if @selected_subtab == "chat" do %>
-        <.chat_tab
-          chat_messages={@chat_messages}
-          current_user={@current_user}
-          new_message={@new_message}
-          update_new_message="update_new_message"
-          send_message="send_message"
-        />
-      <% end %>
+          online_count={@online_count}
+          back_to_plan="back_to_plan"
+          invite_user="invite_user"
+        /> <.sub_tabs selected={@selected_subtab} switch_subtab="switch_subtab" />
+        <%= if @selected_subtab == "itinerary" do %>
+          <.itinerary_tab
+            itinerary_items={@itinerary_items}
+            trip={@trip}
+            show_add_item_modal={@show_add_item_modal}
+            new_item_title={@new_item_title}
+            new_item_type={@new_item_type}
+            new_item_day={@new_item_day}
+            new_item_time={@new_item_time}
+            new_item_cost={@new_item_cost}
+            open_add_item="open_add_item"
+            close_add_item="close_add_item"
+            update_new_item="update_new_item"
+            select_item_type="select_item_type"
+            create_itinerary_item="create_itinerary_item"
+            vote_item="vote_item"
+          />
+        <% end %>
+        
+        <%= if @selected_subtab == "budget" do %>
+          <.budget_tab
+            budget_summary={@budget_summary}
+            trip={@trip}
+            participants={@participants}
+            current_user={@current_user}
+            show_add_budget_modal={@show_add_budget_modal}
+            new_budget_category={@new_budget_category}
+            new_budget_description={@new_budget_description}
+            new_budget_amount={@new_budget_amount}
+            open_add_budget="open_add_budget"
+            close_add_budget="close_add_budget"
+            update_budget_field="update_budget_field"
+            create_budget_item="create_budget_item"
+          />
+        <% end %>
+        
+        <%= if @selected_subtab == "transport" do %>
+          <.transport_tab />
+        <% end %>
+        
+        <%= if @selected_subtab == "packing" do %>
+          <.packing_tab
+            packing_items={@packing_items}
+            trip={@trip}
+            toggle_packing_item="toggle_packing_item"
+            generate_ai_packing="generate_ai_packing"
+          />
+        <% end %>
+        
+        <%= if @selected_subtab == "vibe" do %>
+          <.vibe_tab
+            vibe_pins={@vibe_pins}
+            trip={@trip}
+            show_add_pin_modal={@show_add_pin_modal}
+            new_pin_emoji={@new_pin_emoji}
+            new_pin_caption={@new_pin_caption}
+            open_add_pin="open_add_pin"
+            close_add_pin="close_add_pin"
+            update_pin_field="update_pin_field"
+            create_vibe_pin="create_vibe_pin"
+          />
+        <% end %>
+        
+        <%= if @selected_subtab == "chat" do %>
+          <.chat_tab
+            chat_messages={@chat_messages}
+            current_user={@current_user}
+            new_message={@new_message}
+            update_new_message="update_new_message"
+            send_message="send_message"
+          />
+        <% end %>
+      </div>
     </div>
     """
   end
