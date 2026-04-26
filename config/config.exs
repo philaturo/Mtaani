@@ -9,6 +9,7 @@ if File.exists?(".env") do
   File.stream!(".env")
   |> Enum.each(fn line ->
     line = String.trim(line)
+
     if line != "" and not String.starts_with?(line, "#") do
       case String.split(line, "=", parts: 2) do
         [key, value] -> System.put_env(key, value)
@@ -27,12 +28,11 @@ config :mtaani,
 
 # Geo configuration (ADD THIS BLOCK)
 # config :geo,
-  # json_library: Jason,
- # postgis_extension: true
+# json_library: Jason,
+# postgis_extension: true
 
 # Ecto Repo with PostGIS types
-# config :mtaani, Mtaani.Repo,
- # types: Geo.PostGIS.Type
+# config :mtaani, Mtaani.Repo, types: Geo.PostGIS
 
 # Configure the endpoint
 config :mtaani, MtaaniWeb.Endpoint,
